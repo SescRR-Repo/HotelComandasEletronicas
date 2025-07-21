@@ -1,0 +1,364 @@
+﻿@model HotelComandasEletronicas.ViewModels.UsuarioViewModel
+@{
+    ViewData["Title"] = "Editar Usuário - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-user-edit me-3"></i>
+                Editar Usuário
+            </h2>
+            <p class="mb-0">Alterar dados de: <strong>@Model.Nome</strong></p>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Formulário de Edição
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <!-- Alertas de erro -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Corrija os erros abaixo:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Informações do usuário atual -->
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Usuário atual:</strong>
+                    <span class="badge @Model.ObterClassePerfilBadge() ms-2">@Model.Perfil</span>
+                    <br>
+                    <small>
+                        <strong>Cadastrado em:</strong> @Model.DataCadastro.ToString("dd/MM/yyyy HH:mm") |
+                        <strong>Último acesso:</strong> @(Model.UltimoAcesso?.ToString("dd/MM/yyyy HH:mm") ?? "Nunca")
+                    </small>
+                </div>
+
+                <!-- Formulário -->
+                <form asp-action="Editar" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ID" />
+                    <input type="hidden" asp-for="DataCadastro" />
+                    <input type="hidden" asp-for="UltimoAcesso" />
+
+                    <div class="row">
+                        <!-- Nome -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="Nome" class="form-label">
+                                <i class="fas fa-user me-2"></i>
+                                Nome Completo *
+                            </label>
+                            <input asp-for="Nome" class="form-control"
+                                   placeholder="Digite o nome completo"
+                                   required />
+                            <span asp-validation-for="Nome" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Perfil -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="Perfil" class="form-label">
+                                <i class="fas fa-id-badge me-2"></i>
+                                Perfil *
+                            </label>
+                            <select asp-for="Perfil" class="form-select" onchange="perfilSelecionado()" required>
+                                <option value="">Selecione o perfil</option>
+                                @foreach (var perfil in ViewBag.PerfisDisponiveis as List<string>)
+                                {
+                                    <option value="@perfil" selected="@(perfil == Model.Perfil ? "selected" : null)">@perfil</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Perfil" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Login -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="Login" class="form-label">
+                                <i class="fas fa-at me-2"></i>
+                                Login *
+                            </label>
+                            <input asp-for="Login" class="form-control"
+                                   placeholder="exemplo: joaosilva01"
+                                   required />
+                            <span asp-validation-for="Login" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                Alterar o login pode afetar o acesso do usuário
+                            </div>
+                        </div>
+
+                        <!-- Código ID -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="CodigoID" class="form-label">
+                                <i class="fas fa-hashtag me-2"></i>
+                                Código ID *
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="CodigoID" class="form-control text-center fs-5 fw-bold"
+                                       placeholder="00"
+                                       maxlength="2"
+                                       pattern="[0-9]{2}"
+                                       style="letter-spacing: 0.3em;"
+                                       required />
+                                <button type="button" class="btn btn-outline-secondary" onclick="gerarCodigo()">
+                                    <i class="fas fa-dice"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="CodigoID" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                Alterar o código pode afetar lançamentos futuros
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status do usuário -->
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="form-check form-switch">
+                                <input asp-for="Status" class="form-check-input" type="checkbox" />
+                                <label asp-for="Status" class="form-check-label">
+                                    <i class="fas fa-toggle-on me-2"></i>
+                                    Usuário ativo (pode acessar o sistema)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção de Senha (aparece apenas para Recepção/Supervisor) -->
+                    <div id="secaoSenha" style="display: @(Model.RequererSenha ? "block" : "none");">
+                        <hr>
+                        <h6 class="text-warning mb-3">
+                            <i class="fas fa-lock me-2"></i>
+                            Alterar Senha (opcional)
+                        </h6>
+
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Deixe os campos de senha em branco para manter a senha atual.
+                        </div>
+
+                        <div class="row">
+                            <!-- Nova Senha -->
+                            <div class="col-lg-6 mb-3">
+                                <label asp-for="Senha" class="form-label">
+                                    <i class="fas fa-key me-2"></i>
+                                    Nova Senha
+                                </label>
+                                <div class="input-group">
+                                    <input asp-for="Senha" type="password" class="form-control"
+                                           placeholder="Deixe vazio para manter atual" />
+                                    <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('Senha')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Senha" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Confirmar Nova Senha -->
+                            <div class="col-lg-6 mb-3">
+                                <label asp-for="ConfirmarSenha" class="form-label">
+                                    <i class="fas fa-check-double me-2"></i>
+                                    Confirmar Nova Senha
+                                </label>
+                                <div class="input-group">
+                                    <input asp-for="ConfirmarSenha" type="password" class="form-control"
+                                           placeholder="Confirme a nova senha" />
+                                    <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('ConfirmarSenha')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="ConfirmarSenha" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <hr>
+                    <div class="row">
+                        <div class="col-lg-4 mb-2">
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="fas fa-save me-2"></i>
+                                Salvar Alterações
+                            </button>
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            <a href="/usuario" class="btn btn-secondary w-100">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Voltar à Lista
+                            </a>
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            @if (Model.Status)
+                            {
+                                <button type="button" class="btn btn-danger w-100" onclick="inativarUsuario()">
+                                    <i class="fas fa-ban me-2"></i>
+                                    Inativar Usuário
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-success w-100" onclick="ativarUsuario()">
+                                    <i class="fas fa-check me-2"></i>
+                                    Ativar Usuário
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Card de Histórico (implementação futura) -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Informações Adicionais
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>ID do Usuário:</strong> #@Model.ID<br>
+                        <strong>Data de Cadastro:</strong> @Model.DataCadastro.ToString("dd/MM/yyyy HH:mm")<br>
+                        <strong>Status Atual:</strong>
+                        @if (Model.Status)
+                        {
+                            <span class="badge bg-success">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Inativo</span>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Último Acesso:</strong> @(Model.UltimoAcesso?.ToString("dd/MM/yyyy HH:mm") ?? "Nunca")<br>
+                        <strong>Perfil Atual:</strong> <span class="badge @Model.ObterClassePerfilBadge()">@Model.Perfil</span><br>
+                        <strong>Requer Senha:</strong> @(Model.RequererSenha ? "Sim" : "Não")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Controle de exibição da seção de senha
+        function perfilSelecionado() {
+            const perfil = document.querySelector('select[name="Perfil"]').value;
+            const secaoSenha = document.getElementById('secaoSenha');
+
+            if (perfil === 'Recepção' || perfil === 'Supervisor') {
+                secaoSenha.style.display = 'block';
+            } else {
+                secaoSenha.style.display = 'none';
+                // Limpar campos de senha
+                document.querySelector('input[name="Senha"]').value = '';
+                document.querySelector('input[name="ConfirmarSenha"]').value = '';
+            }
+        }
+
+        // Gerar código único
+        function gerarCodigo() {
+            if (!confirm('Tem certeza que deseja gerar um novo código? Isso pode afetar lançamentos futuros.')) {
+                return;
+            }
+
+            fetch('/usuario/gerarcodigo')
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('input[name="CodigoID"]').value = data.codigo;
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao gerar código. Tente novamente.');
+                });
+        }
+
+        // Toggle password visibility
+        function togglePassword(fieldName) {
+            const input = document.querySelector(`input[name="${fieldName}"]`);
+            const icon = input.nextElementSibling.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Inativar usuário
+        function inativarUsuario() {
+            if (!confirm('Tem certeza que deseja inativar este usuário?\n\nO usuário não conseguirá mais acessar o sistema.')) {
+                return;
+            }
+
+            // Definir status como false e submeter form
+            document.querySelector('input[name="Status"]').checked = false;
+            document.querySelector('form').submit();
+        }
+
+        // Ativar usuário
+        function ativarUsuário() {
+            // Definir status como true e submeter form
+            document.querySelector('input[name="Status"]').checked = true;
+            document.querySelector('form').submit();
+        }
+
+        // Máscaras e validações
+        document.addEventListener('DOMContentLoaded', function() {
+            // Máscara para código ID (apenas números)
+            const codigoInput = document.querySelector('input[name="CodigoID"]');
+            codigoInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+
+            // Verificar perfil inicial para mostrar/ocultar seção de senha
+            perfilSelecionado();
+        });
+
+        // Bootstrap form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

@@ -1,0 +1,301 @@
+﻿@model List<HotelComandasEletronicas.ViewModels.UsuarioViewModel>
+@{
+    ViewData["Title"] = "Gestão de Usuários - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-users me-3"></i>
+                Gestão de Usuários
+            </h2>
+            <p class="mb-0 fs-5">Administração completa do sistema</p>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-success mb-2">
+                    <i class="fas fa-cocktail fa-2x"></i>
+                </div>
+                <h5 class="card-title">Garçons</h5>
+                <h3 class="text-success">@Model.Count(u => u.Perfil == "Garçom")</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-primary mb-2">
+                    <i class="fas fa-desk fa-2x"></i>
+                </div>
+                <h5 class="card-title">Recepção</h5>
+                <h3 class="text-primary">@Model.Count(u => u.Perfil == "Recepção")</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-warning mb-2">
+                    <i class="fas fa-crown fa-2x"></i>
+                </div>
+                <h5 class="card-title">Supervisores</h5>
+                <h3 class="text-warning">@Model.Count(u => u.Perfil == "Supervisor")</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-info mb-2">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+                <h5 class="card-title">Total</h5>
+                <h3 class="text-info">@Model.Count</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Principais -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Ações Disponíveis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-6 mb-2">
+                        <a href="/usuario/cadastrar" class="btn btn-success w-100">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Cadastrar Novo Usuário
+                        </a>
+                    </div>
+                    <div class="col-lg-6 mb-2">
+                        <button type="button" class="btn btn-info w-100" onclick="gerarCodigo()">
+                            <i class="fas fa-hashtag me-2"></i>
+                            Gerar Código Único
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Usuários -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Lista de Usuários (@Model.Count)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Login</th>
+                                    <th>Código</th>
+                                    <th>Perfil</th>
+                                    <th>Status</th>
+                                    <th>Último Acesso</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var usuario in Model.OrderBy(u => u.Nome))
+                                {
+                                    <tr class="@(usuario.Status ? "" : "table-secondary opacity-50")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="@usuario.ObterIconePerfil() me-2"></i>
+                                                <strong>@usuario.Nome</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <code>@usuario.Login</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-dark fs-6">@usuario.CodigoID</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @usuario.ObterClassePerfilBadge()">
+                                                @usuario.Perfil
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (usuario.Status)
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Ativo
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-times me-1"></i>Inativo
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (usuario.UltimoAcesso.HasValue)
+                                            {
+                                                <small>@usuario.UltimoAcesso.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">Nunca</small>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="/usuario/editar/@usuario.ID"
+                                                   class="btn btn-outline-primary"
+                                                   title="Editar usuário">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+
+                                                @if (usuario.Status)
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger"
+                                                            onclick="inativarUsuario(@usuario.ID, '@usuario.Nome')"
+                                                            title="Inativar usuário">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum usuário encontrado</h5>
+                        <p class="text-muted">Clique em "Cadastrar Novo Usuário" para começar.</p>
+                        <a href="/usuario/cadastrar" class="btn btn-success">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Cadastrar Primeiro Usuário
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar código gerado -->
+<div class="modal fade" id="modalCodigo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-hashtag me-2"></i>
+                    Código Único Gerado
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Código disponível para uso:</p>
+                <h1 class="display-3 fw-bold text-info" id="codigoGerado">--</h1>
+                <p class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Este código pode ser usado no cadastro de um novo usuário.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-success" onclick="copiarCodigo()">
+                    <i class="fas fa-copy me-1"></i>
+                    Copiar Código
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Gerar código único
+        function gerarCodigo() {
+            fetch('/usuario/gerarcodigo')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('codigoGerado').textContent = data.codigo;
+                    new bootstrap.Modal(document.getElementById('modalCodigo')).show();
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao gerar código. Tente novamente.');
+                });
+        }
+
+        // Copiar código para clipboard
+        function copiarCodigo() {
+            const codigo = document.getElementById('codigoGerado').textContent;
+            navigator.clipboard.writeText(codigo).then(() => {
+                alert(`Código ${codigo} copiado para a área de transferência!`);
+            });
+        }
+
+        // Inativar usuário
+        function inativarUsuario(id, nome) {
+            if (!confirm(`Tem certeza que deseja inativar o usuário "${nome}"?\n\nO usuário não conseguirá mais acessar o sistema.`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch(`/usuario/inativar/${id}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert(data.mensagem);
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao inativar usuário. Tente novamente.');
+            });
+        }
+
+        // Filtros da tabela
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aqui podemos adicionar filtros por perfil, status, etc.
+            // Implementação futura se necessário
+        });
+    </script>
+}
