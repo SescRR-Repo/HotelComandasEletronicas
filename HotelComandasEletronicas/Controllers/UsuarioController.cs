@@ -251,7 +251,7 @@ namespace HotelComandasEletronicas.Controllers
 
         [HttpGet]
         [RequireSupervisor]
-        public async Task<IActionResult> GerarCodigo()
+        public IActionResult GerarCodigo()
         {
             var codigo = _usuarioService.GerarCodigoUnico();
             return Json(new { codigo = codigo });

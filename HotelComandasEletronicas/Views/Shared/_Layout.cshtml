@@ -67,9 +67,11 @@
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <a class="dropdown-item" href="/usuario/logout">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Sair
-                                        </a>
+                                        <form asp-controller="Usuario" asp-action="Logout" method="post" style="display: inline;">
+                                            <button type="submit" class="dropdown-item border-0 bg-transparent">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Sair
+                                            </button>
+                                        </form>
                                     </li>
                                 </ul>
                             </li>

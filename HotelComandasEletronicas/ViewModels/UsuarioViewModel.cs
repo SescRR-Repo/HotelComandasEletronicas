@@ -131,25 +131,4 @@ namespace HotelComandasEletronicas.ViewModels
             };
         }
     }
-
-    // ViewModel para validação de código
-    public class ValidarCodigoViewModel
-    {
-        [Required(ErrorMessage = "Código é obrigatório")]
-        [StringLength(2, MinimumLength = 2, ErrorMessage = "Código deve ter exatamente 2 dígitos")]
-        [RegularExpression(@"^\d{2}$", ErrorMessage = "Código deve conter apenas números")]
-        public string Codigo { get; set; } = string.Empty;
-
-        public string? ReturnUrl { get; set; }
-
-        public string MensagemErro { get; set; } = string.Empty;
-        public bool ExibirErro => !string.IsNullOrWhiteSpace(MensagemErro);
-
-        public bool IsValido()
-        {
-            return !string.IsNullOrWhiteSpace(Codigo) &&
-                   Codigo.Length == 2 &&
-                   Codigo.All(char.IsDigit);
-        }
-    }
 }

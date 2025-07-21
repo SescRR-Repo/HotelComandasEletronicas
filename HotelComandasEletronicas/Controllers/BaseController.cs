@@ -46,11 +46,11 @@ namespace HotelComandasEletronicas.Controllers
             }
         }
 
-        protected bool UsuarioEstaLogado => UsuarioLogado != null;
+        public bool UsuarioEstaLogado => UsuarioLogado != null;
 
-        protected bool UsuarioEhSupervisor => UsuarioLogado?.IsSupervisor() ?? false;
+        public bool UsuarioEhSupervisor => UsuarioLogado?.IsSupervisor() ?? false;
 
-        protected bool UsuarioEhRecepcaoOuSupervisor =>
+        public bool UsuarioEhRecepcaoOuSupervisor =>
             UsuarioLogado?.IsRecepcao() ?? false || UsuarioEhSupervisor;
 
         #endregion
@@ -87,7 +87,7 @@ namespace HotelComandasEletronicas.Controllers
             return true;
         }
 
-        protected bool VerificarCodigoOuLogin()
+        public bool VerificarCodigoOuLogin()
         {
             var temLogin = UsuarioEstaLogado;
             var temCodigo = !string.IsNullOrWhiteSpace(CodigoUsuarioAtual);
@@ -104,7 +104,7 @@ namespace HotelComandasEletronicas.Controllers
 
         #region Métodos de Redirecionamento
 
-        protected IActionResult RedirecionarParaLogin(string? returnUrl = null)
+        public IActionResult RedirecionarParaLogin(string? returnUrl = null)
         {
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return RedirectToAction("Login", "Usuario", new { returnUrl });
@@ -112,7 +112,7 @@ namespace HotelComandasEletronicas.Controllers
             return RedirectToAction("Login", "Usuario");
         }
 
-        protected IActionResult RedirecionarParaValidarCodigo(string? returnUrl = null)
+        public IActionResult RedirecionarParaValidarCodigo(string? returnUrl = null)
         {
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return RedirectToAction("ValidarCodigo", "Usuario", new { returnUrl });
@@ -120,7 +120,7 @@ namespace HotelComandasEletronicas.Controllers
             return RedirectToAction("ValidarCodigo", "Usuario");
         }
 
-        protected IActionResult RedirecionarParaHome()
+        public IActionResult RedirecionarParaHome()
         {
             return RedirectToAction("Index", "Home");
         }
