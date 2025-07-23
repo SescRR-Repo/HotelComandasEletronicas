@@ -1,0 +1,384 @@
+﻿@model HotelComandasEletronicas.ViewModels.ProdutoViewModel
+@{
+    ViewData["Title"] = "Cadastrar Produto - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-plus me-3"></i>
+                Cadastrar Novo Produto
+            </h2>
+            <p class="mb-0">Adicionar item ao cardápio</p>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-form me-2"></i>
+                    Formulário de Cadastro
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <!-- Alertas de erro -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Corrija os erros abaixo:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Instruções -->
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Dicas importantes:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>Descrição:</strong> Seja claro e específico (ex: "Água Mineral 500ml")</li>
+                        <li><strong>Categoria:</strong> Escolha a categoria correta para facilitar a organização</li>
+                        <li><strong>Valor:</strong> Preço unitário que será cobrado do cliente</li>
+                    </ul>
+                </div>
+
+                <!-- Formulário -->
+                <form asp-action="Cadastrar" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div class="row">
+                        <!-- Descrição -->
+                        <div class="col-lg-8 mb-3">
+                            <label asp-for="Descricao" class="form-label">
+                                <i class="fas fa-tag me-2"></i>
+                                Descrição do Produto *
+                            </label>
+                            <input asp-for="Descricao" class="form-control"
+                                   placeholder="Digite a descrição do produto"
+                                   onblur="verificarProdutoExistente()"
+                                   required />
+                            <span asp-validation-for="Descricao" class="text-danger small"></span>
+                            <div class="form-text">
+                                Exemplo: "Cerveja Skol Lata 350ml", "Hambúrguer Artesanal", "Toalha Extra"
+                            </div>
+                        </div>
+
+                        <!-- Categoria -->
+                        <div class="col-lg-4 mb-3">
+                            <label asp-for="Categoria" class="form-label">
+                                <i class="fas fa-list me-2"></i>
+                                Categoria *
+                            </label>
+                            <select asp-for="Categoria" class="form-select" onchange="categoriaEscolhida()" required>
+                                <option value="">Selecione a categoria</option>
+                                @if (ViewBag.Categorias != null)
+                                {
+                                    @foreach (var categoria in ViewBag.Categorias as List<string>)
+                                    {
+                                        <option value="@categoria">@categoria</option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="Bebidas">Bebidas</option>
+                                    <option value="Comidas">Comidas</option>
+                                    <option value="Serviços">Serviços</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Categoria" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Valor -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="Valor" class="form-label">
+                                <i class="fas fa-dollar-sign me-2"></i>
+                                Valor Unitário *
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input asp-for="Valor" type="number" class="form-control"
+                                       step="0.01" min="0.01" max="9999.99"
+                                       placeholder="0,00"
+                                       onchange="atualizarPreview()"
+                                       required />
+                            </div>
+                            <span asp-validation-for="Valor" class="text-danger small"></span>
+                            <div class="form-text">
+                                Valor que será cobrado por unidade
+                            </div>
+                        </div>
+
+                        <!-- Ícone da Categoria (Preview) -->
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-eye me-2"></i>
+                                Preview da Categoria
+                            </label>
+                            <div class="form-control d-flex align-items-center justify-content-center" style="min-height: 50px;">
+                                <div id="previewCategoria">
+                                    <i class="fas fa-box fa-2x text-muted"></i>
+                                    <small class="d-block text-muted mt-1">Selecione uma categoria</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <hr>
+                    <div class="row">
+                        <div class="col-lg-6 mb-2">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-save me-2"></i>
+                                Cadastrar Produto
+                            </button>
+                        </div>
+                        <div class="col-lg-6 mb-2">
+                            <a href="/produto" class="btn btn-secondary w-100">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Voltar à Lista
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Card de Preview do Produto -->
+        <div class="card mt-4" id="previewCard" style="display: none;">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Preview do Produto
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div id="previewIcone" class="me-3">
+                                <i class="fas fa-box fa-2x text-muted"></i>
+                            </div>
+                            <div>
+                                <h5 id="previewNome" class="mb-1">Nome do Produto</h5>
+                                <p class="mb-0 text-muted">
+                                    <span id="previewCategoriaTexto">Categoria</span> |
+                                    <strong id="previewValor" class="text-success">R$ 0,00</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span id="previewBadge" class="badge bg-secondary">Categoria</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Produtos Similares (se encontrados) -->
+        <div class="card mt-4" id="produtosSimilares" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Produtos Similares Encontrados
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Verifique se o produto que você está cadastrando já não existe:</p>
+                <div id="listaSimilares"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Atualizar preview em tempo real
+        function atualizarPreview() {
+            const descricao = document.querySelector('input[name="Descricao"]').value;
+            const categoria = document.querySelector('select[name="Categoria"]').value;
+            const valor = parseFloat(document.querySelector('input[name="Valor"]').value) || 0;
+
+            if (descricao || categoria || valor > 0) {
+                document.getElementById('previewCard').style.display = 'block';
+
+                document.getElementById('previewNome').textContent = descricao || 'Nome do Produto';
+                document.getElementById('previewCategoriaTexto').textContent = categoria || 'Categoria';
+                document.getElementById('previewValor').textContent = new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                }).format(valor);
+
+                // Atualizar ícone e badge
+                categoriaEscolhida();
+            } else {
+                document.getElementById('previewCard').style.display = 'none';
+            }
+        }
+
+        // Atualizar preview da categoria
+        function categoriaEscolhida() {
+            const categoria = document.querySelector('select[name="Categoria"]').value;
+            const previewCategoria = document.getElementById('previewCategoria');
+            const previewIcone = document.getElementById('previewIcone');
+            const previewBadge = document.getElementById('previewBadge');
+
+            let icone, classe, badgeClasse;
+
+            switch(categoria) {
+                case 'Bebidas':
+                    icone = 'fas fa-glass-whiskey';
+                    classe = 'text-info';
+                    badgeClasse = 'bg-info';
+                    break;
+                case 'Comidas':
+                    icone = 'fas fa-utensils';
+                    classe = 'text-warning';
+                    badgeClasse = 'bg-warning text-dark';
+                    break;
+                case 'Serviços':
+                    icone = 'fas fa-concierge-bell';
+                    classe = 'text-success';
+                    badgeClasse = 'bg-success';
+                    break;
+                default:
+                    icone = 'fas fa-box';
+                    classe = 'text-muted';
+                    badgeClasse = 'bg-secondary';
+            }
+
+            // Atualizar preview da categoria no formulário
+            if (categoria) {
+                previewCategoria.innerHTML = `
+                    <i class="${icone} fa-2x ${classe}"></i>
+                    <small class="d-block ${classe} mt-1">${categoria}</small>
+                `;
+            } else {
+                previewCategoria.innerHTML = `
+                    <i class="fas fa-box fa-2x text-muted"></i>
+                    <small class="d-block text-muted mt-1">Selecione uma categoria</small>
+                `;
+            }
+
+            // Atualizar preview do card
+            if (previewIcone) {
+                previewIcone.innerHTML = `<i class="${icone} fa-2x ${classe}"></i>`;
+            }
+
+            if (previewBadge) {
+                previewBadge.className = `badge ${badgeClasse}`;
+                previewBadge.textContent = categoria || 'Categoria';
+            }
+
+            atualizarPreview();
+        }
+
+        // Verificar se produto já existe
+        function verificarProdutoExistente() {
+            const descricao = document.querySelector('input[name="Descricao"]').value;
+
+            if (!descricao || descricao.length < 3) {
+                document.getElementById('produtosSimilares').style.display = 'none';
+                return;
+            }
+
+            fetch(`/produto/verificarproduto?descricao=${encodeURIComponent(descricao)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.existe) {
+                        document.getElementById('produtosSimilares').style.display = 'block';
+                        document.getElementById('listaSimilares').innerHTML =
+                            '<div class="alert alert-danger">Produto com esta descrição já existe!</div>';
+                    } else {
+                        // Buscar produtos similares
+                        buscarProdutosSimilares(descricao);
+                    }
+                })
+                .catch(error => console.error('Erro:', error));
+        }
+
+        // Buscar produtos similares
+        function buscarProdutosSimilares(descricao) {
+            if (descricao.length < 3) return;
+
+            fetch(`/produto/buscaportexto?termo=${encodeURIComponent(descricao)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        document.getElementById('produtosSimilares').style.display = 'block';
+
+                        let html = '<div class="row">';
+                        data.forEach(produto => {
+                            html += `
+                                <div class="col-md-6 mb-2">
+                                    <div class="border rounded p-2">
+                                        <strong>${produto.descricao}</strong><br>
+                                        <small class="text-muted">${produto.categoria} | ${produto.valorFormatado}</small>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+
+                        document.getElementById('listaSimilares').innerHTML = html;
+                    } else {
+                        document.getElementById('produtosSimilares').style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Erro:', error));
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atualizar preview em tempo real
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('input', atualizarPreview);
+                element.addEventListener('change', atualizarPreview);
+            });
+
+            // Máscara para valor
+            const valorInput = document.querySelector('input[name="Valor"]');
+            valorInput.addEventListener('input', function() {
+                // Garantir que não seja negativo
+                if (this.value < 0) this.value = 0;
+                if (this.value > 9999.99) this.value = 9999.99;
+            });
+
+            // Auto-sugestão na descrição
+            const descricaoInput = document.querySelector('input[name="Descricao"]');
+            descricaoInput.addEventListener('input', function() {
+                // Implementar auto-sugestão baseada na categoria se necessário
+                atualizarPreview();
+            });
+        });
+
+        // Bootstrap form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

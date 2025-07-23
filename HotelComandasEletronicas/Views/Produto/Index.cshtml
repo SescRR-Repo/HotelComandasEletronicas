@@ -1,0 +1,491 @@
+﻿@model List<HotelComandasEletronicas.Models.Produto>
+@{
+    ViewData["Title"] = "Gestão de Produtos - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-box me-3"></i>
+                Gestão de Produtos
+            </h2>
+            <p class="mb-0 fs-5">Cardápio e serviços disponíveis</p>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-info mb-2">
+                    <i class="fas fa-glass-whiskey fa-2x"></i>
+                </div>
+                <h5 class="card-title">Bebidas</h5>
+                <h3 class="text-info">@Model.Count(p => p.IsCategoria("Bebidas") && p.IsAtivo())</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-warning mb-2">
+                    <i class="fas fa-utensils fa-2x"></i>
+                </div>
+                <h5 class="card-title">Comidas</h5>
+                <h3 class="text-warning">@Model.Count(p => p.IsCategoria("Comidas") && p.IsAtivo())</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-success mb-2">
+                    <i class="fas fa-concierge-bell fa-2x"></i>
+                </div>
+                <h5 class="card-title">Serviços</h5>
+                <h3 class="text-success">@Model.Count(p => p.IsCategoria("Serviços") && p.IsAtivo())</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-primary mb-2">
+                    <i class="fas fa-box fa-2x"></i>
+                </div>
+                <h5 class="card-title">Total</h5>
+                <h3 class="text-primary">@Model.Count</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações e Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Ações e Filtros
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <!-- Botão Cadastrar -->
+                    <div class="col-lg-3 mb-2">
+                        <a href="/produto/cadastrar" class="btn btn-success w-100">
+                            <i class="fas fa-plus me-2"></i>
+                            Cadastrar Produto
+                        </a>
+                    </div>
+
+                    <!-- Filtro por Categoria -->
+                    <div class="col-lg-3 mb-2">
+                        <select id="filtroCategoria" class="form-select" onchange="aplicarFiltros()">
+                            <option value="">Todas as categorias</option>
+                            @if (ViewBag.Categorias != null)
+                            {
+                                @foreach (var categoria in ViewBag.Categorias as List<string>)
+                                {
+                                    @if (categoria == ViewBag.CategoriaAtual)
+                                    {
+                                        <option value="@categoria" selected>@categoria</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@categoria">@categoria</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Filtro por Status -->
+                    <div class="col-lg-3 mb-2">
+                        <select id="filtroStatus" class="form-select" onchange="aplicarFiltros()">
+                            <option value="">Todos os status</option>
+                            <option value="true" selected="@(ViewBag.AtivoAtual == true)">Apenas Ativos</option>
+                            <option value="false" selected="@(ViewBag.AtivoAtual == false)">Apenas Inativos</option>
+                        </select>
+                    </div>
+
+                    <!-- Campo de Busca -->
+                    <div class="col-lg-3 mb-2">
+                        <div class="input-group">
+                            <input type="text" id="campoBusca" class="form-control" 
+                                   placeholder="Buscar produto..." 
+                                   value="@ViewBag.BuscaAtual"
+                                   onkeypress="buscarEnter(event)">
+                            <button class="btn btn-outline-secondary" onclick="aplicarFiltros()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de ação rápida -->
+                <div class="row">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-outline-info btn-sm me-2" onclick="limparFiltros()">
+                            <i class="fas fa-refresh me-1"></i>Limpar Filtros
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="exportarExcel()">
+                            <i class="fas fa-file-excel me-1"></i>Exportar Excel
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="atualizarEstatisticas()">
+                            <i class="fas fa-chart-bar me-1"></i>Atualizar Stats
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Produtos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Lista de Produtos (@Model.Count)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Cadastrado em</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var produto in Model.OrderBy(p => p.Categoria).ThenBy(p => p.Descricao))
+                                {
+                                    <tr class="@(produto.IsAtivo() ? "" : "table-secondary opacity-50")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="@(produto.IsCategoria("Bebidas") ? "fas fa-glass-whiskey text-info" : 
+                                                          produto.IsCategoria("Comidas") ? "fas fa-utensils text-warning" : 
+                                                          "fas fa-concierge-bell text-success") me-2"></i>
+                                                <div>
+                                                    <strong>@produto.Descricao</strong>
+                                                    @if (!produto.IsAtivo())
+                                                    {
+                                                        <br><small class="text-muted">(Inativo)</small>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(produto.IsCategoria("Bebidas") ? "bg-info" : 
+                                                                produto.IsCategoria("Comidas") ? "bg-warning text-dark" : 
+                                                                "bg-success")">
+                                                @produto.Categoria
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-primary">@produto.FormatarValor()</strong>
+                                        </td>
+                                        <td>
+                                            @if (produto.IsAtivo())
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Ativo
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-times me-1"></i>Inativo
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <small>@produto.DataCadastro.ToString("dd/MM/yyyy")</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <!-- Botão Editar -->
+                                                <a href="/produto/editar/@produto.ID"
+                                                   class="btn btn-outline-primary"
+                                                   title="Editar produto">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+
+                                                <!-- Botão Detalhes -->
+                                                <a href="/produto/detalhes/@produto.ID"
+                                                   class="btn btn-outline-info"
+                                                   title="Ver detalhes">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+
+                                                <!-- Botão Alterar Preço -->
+                                                <button type="button"
+                                                        class="btn btn-outline-warning"
+                                                        onclick="alterarPreco(@produto.ID, '@produto.Descricao', @produto.Valor.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))"
+                                                        title="Alterar preço">
+                                                    <i class="fas fa-dollar-sign"></i>
+                                                </button>
+
+                                                <!-- Botão Ativar/Inativar -->
+                                                @if (produto.IsAtivo())
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger"
+                                                            onclick="inativarProduto(@produto.ID, '@produto.Descricao')"
+                                                            title="Inativar produto">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-success"
+                                                            onclick="ativarProduto(@produto.ID, '@produto.Descricao')"
+                                                            title="Ativar produto">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum produto encontrado</h5>
+                        <p class="text-muted">Clique em "Cadastrar Produto" para começar.</p>
+                        <a href="/produto/cadastrar" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            Cadastrar Primeiro Produto
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para alterar preço -->
+<div class="modal fade" id="modalAlterarPreco" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-dollar-sign me-2"></i>
+                    Alterar Preço
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Alterar preço do produto: <strong id="nomeProdutoPreco"></strong></p>
+                <div class="mb-3">
+                    <label for="novoPreco" class="form-label">Novo Preço</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" class="form-control" id="novoPreco" 
+                               step="0.01" min="0.01" max="9999.99"
+                               placeholder="0,00">
+                    </div>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta alteração afetará apenas novos lançamentos.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="confirmarAlteracaoPreco()">
+                    <i class="fas fa-save me-1"></i>
+                    Alterar Preço
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let produtoIdAtual = 0;
+
+        // Aplicar filtros
+        function aplicarFiltros() {
+            const categoria = document.getElementById('filtroCategoria').value;
+            const status = document.getElementById('filtroStatus').value;
+            const busca = document.getElementById('campoBusca').value;
+
+            let url = '/produto';
+            const params = new URLSearchParams();
+
+            if (categoria) params.append('categoria', categoria);
+            if (status) params.append('ativo', status);
+            if (busca) params.append('busca', busca);
+
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+
+            window.location.href = url;
+        }
+
+        // Buscar ao pressionar Enter
+        function buscarEnter(event) {
+            if (event.key === 'Enter') {
+                aplicarFiltros();
+            }
+        }
+
+        // Limpar filtros
+        function limparFiltros() {
+            window.location.href = '/produto';
+        }
+
+        // Alterar preço
+        function alterarPreco(id, nome, precoAtual) {
+            produtoIdAtual = id;
+            document.getElementById('nomeProdutoPreco').textContent = nome;
+            document.getElementById('novoPreco').value = precoAtual.toFixed(2);
+            new bootstrap.Modal(document.getElementById('modalAlterarPreco')).show();
+        }
+
+        function confirmarAlteracaoPreco() {
+            const novoPreco = parseFloat(document.getElementById('novoPreco').value);
+
+            if (!novoPreco || novoPreco <= 0) {
+                alert('Digite um preço válido maior que zero.');
+                return;
+            }
+
+            const requestData = {
+                produtoId: produtoIdAtual,
+                novoPreco: novoPreco
+            };
+
+            fetch('/produto/alterarpreco', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert(data.mensagem);
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao alterar preço. Tente novamente.');
+            });
+
+            bootstrap.Modal.getInstance(document.getElementById('modalAlterarPreco')).hide();
+        }
+
+        // Inativar produto
+        function inativarProduto(id, nome) {
+            if (!confirm(`Tem certeza que deseja inativar o produto "${nome}"?\n\nO produto não aparecerá mais na lista de lançamentos.`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch(`/produto/inativar/${id}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert(data.mensagem);
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao inativar produto. Tente novamente.');
+            });
+        }
+
+        // Ativar produto
+        function ativarProduto(id, nome) {
+            if (!confirm(`Tem certeza que deseja ativar o produto "${nome}"?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch(`/produto/ativar/${id}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert(data.mensagem);
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao ativar produto. Tente novamente.');
+            });
+        }
+
+        // Exportar Excel (implementação futura)
+        function exportarExcel() {
+            alert('Funcionalidade de exportação será implementada em breve.');
+        }
+
+        // Atualizar estatísticas
+        function atualizarEstatisticas() {
+            fetch('/produto/obterestatisticas')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Estatísticas atualizadas:', data);
+                    // Implementar atualização visual das estatísticas
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                });
+        }
+    </script>
+}
+
+@{
+    // Token para requisições AJAX
+    <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken()" />
+}

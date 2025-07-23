@@ -1,0 +1,443 @@
+﻿@model HotelComandasEletronicas.ViewModels.ProdutoViewModel
+@{
+    ViewData["Title"] = "Editar Produto - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-edit me-3"></i>
+                Editar Produto
+            </h2>
+            <p class="mb-0">Alterar dados de: <strong>@Model.Descricao</strong></p>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Formulário de Edição
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <!-- Alertas de erro -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Corrija os erros abaixo:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Informações do produto atual -->
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Produto atual:</strong>
+                    <span class="badge @Model.BadgeCategoria ms-2">@Model.Categoria</span>
+                    <br>
+                    <small>
+                        <strong>Cadastrado em:</strong> @Model.DataCadastro.ToString("dd/MM/yyyy HH:mm") por @Model.UsuarioCadastro |
+                        <strong>Status:</strong>
+                        @if (Model.Status)
+                        {
+                            <span class="text-success">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">Inativo</span>
+                        }
+                    </small>
+                </div>
+
+                <!-- Aviso sobre lançamentos -->
+                @if (ViewBag.TemLancamentos == true)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção:</strong> Este produto possui lançamentos ativos. Alterações no valor afetarão apenas novos lançamentos.
+                    </div>
+                }
+
+                <!-- Formulário -->
+                <form asp-action="Editar" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ID" />
+                    <input type="hidden" asp-for="DataCadastro" />
+                    <input type="hidden" asp-for="UsuarioCadastro" />
+
+                    <div class="row">
+                        <!-- Descrição -->
+                        <div class="col-lg-8 mb-3">
+                            <label asp-for="Descricao" class="form-label">
+                                <i class="fas fa-tag me-2"></i>
+                                Descrição do Produto *
+                            </label>
+                            <input asp-for="Descricao" class="form-control"
+                                   placeholder="Digite a descrição do produto"
+                                   onblur="verificarProdutoExistente()"
+                                   required />
+                            <span asp-validation-for="Descricao" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Alterar a descrição pode afetar a identificação do produto
+                            </div>
+                        </div>
+
+                        <!-- Categoria -->
+                        <div class="col-lg-4 mb-3">
+                            <label asp-for="Categoria" class="form-label">
+                                <i class="fas fa-list me-2"></i>
+                                Categoria *
+                            </label>
+                            <select asp-for="Categoria" class="form-select" onchange="categoriaEscolhida()" required>
+                                <option value="">Selecione a categoria</option>
+                                @if (ViewBag.Categorias != null)
+                                {
+                                    @foreach (var categoria in ViewBag.Categorias as List<string>)
+                                    {
+                                        <option value="@categoria" selected="@(categoria == Model.Categoria ? "selected" : null)">@categoria</option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="Bebidas" selected="@(Model.Categoria == "Bebidas" ? "selected" : null)">Bebidas</option>
+                                    <option value="Comidas" selected="@(Model.Categoria == "Comidas" ? "selected" : null)">Comidas</option>
+                                    <option value="Serviços" selected="@(Model.Categoria == "Serviços" ? "selected" : null)">Serviços</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Categoria" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Valor -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="Valor" class="form-label">
+                                <i class="fas fa-dollar-sign me-2"></i>
+                                Valor Unitário *
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input asp-for="Valor" type="number" class="form-control"
+                                       step="0.01" min="0.01" max="9999.99"
+                                       onchange="atualizarPreview()"
+                                       required />
+                            </div>
+                            <span asp-validation-for="Valor" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                Alterações afetam apenas novos lançamentos
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-toggle-on me-2"></i>
+                                Status do Produto
+                            </label>
+                            <div class="form-control d-flex align-items-center" style="min-height: 50px;">
+                                <div class="form-check form-switch">
+                                    <input asp-for="Status" class="form-check-input" type="checkbox"
+                                           onchange="atualizarPreview()" />
+                                    <label asp-for="Status" class="form-check-label">
+                                        Produto ativo (disponível para lançamento)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <hr>
+                    <div class="row">
+                        <div class="col-lg-4 mb-2">
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="fas fa-save me-2"></i>
+                                Salvar Alterações
+                            </button>
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            <a href="/produto" class="btn btn-secondary w-100">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Voltar à Lista
+                            </a>
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            <a href="/produto/detalhes/@Model.ID" class="btn btn-info w-100">
+                                <i class="fas fa-eye me-2"></i>
+                                Ver Detalhes
+                            </a>
+                        </div>
+                    </div>
+
+                    @if (ViewBag.TemLancamentos != true)
+                    {
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                @if (Model.Status)
+                                {
+                                    <button type="button" class="btn btn-outline-danger w-100" onclick="inativarProduto()">
+                                        <i class="fas fa-ban me-2"></i>
+                                        Inativar Produto
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-outline-success w-100" onclick="ativarProduto()">
+                                        <i class="fas fa-check me-2"></i>
+                                        Ativar Produto
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </form>
+            </div>
+        </div>
+
+        <!-- Card de Preview Atualizado -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Preview das Alterações
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div id="previewIcone" class="me-3">
+                                <i class="@Model.IconeCategoria fa-2x @Model.ClasseCategoria"></i>
+                            </div>
+                            <div>
+                                <h5 id="previewNome" class="mb-1">@Model.Descricao</h5>
+                                <p class="mb-0 text-muted">
+                                    <span id="previewCategoriaTexto">@Model.Categoria</span> |
+                                    <strong id="previewValor" class="text-success">@Model.ValorFormatado</strong> |
+                                    <span id="previewStatus" class="@(Model.Status ? "text-success" : "text-danger")">
+                                        @(Model.Status ? "Ativo" : "Inativo")
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span id="previewBadge" class="badge @Model.BadgeCategoria">@Model.Categoria</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico e Informações Adicionais -->
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Informações Adicionais
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>ID do Produto:</strong> #@Model.ID<br>
+                        <strong>Data de Cadastro:</strong> @Model.DataCadastro.ToString("dd/MM/yyyy HH:mm")<br>
+                        <strong>Cadastrado por:</strong> @Model.UsuarioCadastro<br>
+                        <strong>Possui Lançamentos:</strong>
+                        @if (ViewBag.TemLancamentos == true)
+                        {
+                            <span class="text-warning">Sim</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Não</span>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Status Atual:</strong>
+                        @if (Model.Status)
+                        {
+                            <span class="badge bg-success">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Inativo</span>
+                        }
+<br>
+                        <strong>Categoria:</strong> <span class="badge @Model.BadgeCategoria">@Model.Categoria</span><br>
+                        <strong>Valor Atual:</strong> <span class="text-primary fw-bold">@Model.ValorFormatado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Atualizar preview em tempo real
+        function atualizarPreview() {
+            const descricao = document.querySelector('input[name="Descricao"]').value;
+            const categoria = document.querySelector('select[name="Categoria"]').value;
+            const valor = parseFloat(document.querySelector('input[name="Valor"]').value) || 0;
+            const status = document.querySelector('input[name="Status"]').checked;
+
+            document.getElementById('previewNome').textContent = descricao || 'Nome do Produto';
+            document.getElementById('previewCategoriaTexto').textContent = categoria || 'Categoria';
+            document.getElementById('previewValor').textContent = new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor);
+
+            const previewStatus = document.getElementById('previewStatus');
+            if (status) {
+                previewStatus.textContent = 'Ativo';
+                previewStatus.className = 'text-success';
+            } else {
+                previewStatus.textContent = 'Inativo';
+                previewStatus.className = 'text-danger';
+            }
+
+            // Atualizar ícone e badge
+            categoriaEscolhida();
+        }
+
+        // Atualizar preview da categoria
+        function categoriaEscolhida() {
+            const categoria = document.querySelector('select[name="Categoria"]').value;
+            const previewIcone = document.getElementById('previewIcone');
+            const previewBadge = document.getElementById('previewBadge');
+
+            let icone, classe, badgeClasse;
+
+            switch(categoria) {
+                case 'Bebidas':
+                    icone = 'fas fa-glass-whiskey';
+                    classe = 'text-info';
+                    badgeClasse = 'bg-info';
+                    break;
+                case 'Comidas':
+                    icone = 'fas fa-utensils';
+                    classe = 'text-warning';
+                    badgeClasse = 'bg-warning text-dark';
+                    break;
+                case 'Serviços':
+                    icone = 'fas fa-concierge-bell';
+                    classe = 'text-success';
+                    badgeClasse = 'bg-success';
+                    break;
+                default:
+                    icone = 'fas fa-box';
+                    classe = 'text-muted';
+                    badgeClasse = 'bg-secondary';
+            }
+
+            if (previewIcone) {
+                previewIcone.innerHTML = `<i class="${icone} fa-2x ${classe}"></i>`;
+            }
+
+            if (previewBadge) {
+                previewBadge.className = `badge ${badgeClasse}`;
+                previewBadge.textContent = categoria || 'Categoria';
+            }
+        }
+
+        // Verificar se produto já existe
+        function verificarProdutoExistente() {
+            const descricao = document.querySelector('input[name="Descricao"]').value;
+            const id = document.querySelector('input[name="ID"]').value;
+
+            if (!descricao || descricao.length < 3) return;
+
+            fetch(`/produto/verificarproduto?descricao=${encodeURIComponent(descricao)}&id=${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.existe) {
+                        // Mostrar aviso de produto existente
+                        const input = document.querySelector('input[name="Descricao"]');
+                        input.classList.add('is-invalid');
+
+                        // Adicionar feedback visual
+                        let feedback = input.nextElementSibling;
+                        if (!feedback || !feedback.classList.contains('invalid-feedback')) {
+                            feedback = document.createElement('div');
+                            feedback.className = 'invalid-feedback';
+                            input.parentNode.insertBefore(feedback, input.nextSibling);
+                        }
+                        feedback.textContent = 'Produto com esta descrição já existe!';
+                    } else {
+                        document.querySelector('input[name="Descricao"]').classList.remove('is-invalid');
+                    }
+                })
+                .catch(error => console.error('Erro:', error));
+        }
+
+        // Inativar produto
+        function inativarProduto() {
+            if (!confirm('Tem certeza que deseja inativar este produto?\n\nO produto não aparecerá mais na lista de lançamentos.')) {
+                return;
+            }
+
+            document.querySelector('input[name="Status"]').checked = false;
+            atualizarPreview();
+            document.querySelector('form').submit();
+        }
+
+        // Ativar produto
+        function ativarProduto() {
+            document.querySelector('input[name="Status"]').checked = true;
+            atualizarPreview();
+            document.querySelector('form').submit();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atualizar preview em tempo real
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('input', atualizarPreview);
+                element.addEventListener('change', atualizarPreview);
+            });
+
+            // Máscara para valor
+            const valorInput = document.querySelector('input[name="Valor"]');
+            valorInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 9999.99) this.value = 9999.99;
+            });
+
+            // Inicializar preview
+            categoriaEscolhida();
+        });
+
+        // Bootstrap form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

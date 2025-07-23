@@ -50,8 +50,14 @@ namespace HotelComandasEletronicas.Controllers
 
         public bool UsuarioEhSupervisor => UsuarioLogado?.IsSupervisor() ?? false;
 
-        public bool UsuarioEhRecepcaoOuSupervisor =>
-            UsuarioLogado?.IsRecepcao() ?? false || UsuarioEhSupervisor;
+        public bool UsuarioEhRecepcaoOuSupervisor
+        {
+            get
+            {
+                var usuario = UsuarioLogado;
+                return (usuario?.IsRecepcao() ?? false) || (usuario?.IsSupervisor() ?? false);
+            }
+        }
 
         #endregion
 

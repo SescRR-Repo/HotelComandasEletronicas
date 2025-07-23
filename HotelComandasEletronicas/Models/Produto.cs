@@ -57,5 +57,44 @@ namespace HotelComandasEletronicas.Models
         public bool IsComida() => IsCategoria("Comidas");
 
         public bool IsServico() => IsCategoria("Serviços");
+
+        // Método adicionado para corrigir erro de compilação
+        public string ObterDescricaoCompleta()
+        {
+            return $"{Descricao} - {FormatarValor()} ({Categoria})";
+        }
+
+        // Método adicional para exibição resumida
+        public string ObterResumo()
+        {
+            var statusTexto = Status ? "Ativo" : "Inativo";
+            return $"{Descricao} | {Categoria} | {FormatarValor()} | {statusTexto}";
+        }
+
+        // Método para verificar se pode ser inativado
+        public bool PodeSerInativado()
+        {
+            return IsAtivo() && (!Lancamentos?.Any(l => l.IsAtivo()) ?? true);
+        }
+
+        // Método para obter total vendido
+        public decimal TotalVendido()
+        {
+            return Lancamentos?.Where(l => l.IsAtivo()).Sum(l => l.ValorTotal) ?? 0;
+        }
+
+        // Método para obter quantidade total vendida
+        public decimal QuantidadeTotalVendida()
+        {
+            return Lancamentos?.Where(l => l.IsAtivo()).Sum(l => l.Quantidade) ?? 0;
+        }
+
+        // Método para obter último lançamento
+        public DateTime? UltimoLancamento()
+        {
+            return Lancamentos?.Where(l => l.IsAtivo())
+                .OrderByDescending(l => l.DataHoraLancamento)
+                .FirstOrDefault()?.DataHoraLancamento;
+        }
     }
 }
