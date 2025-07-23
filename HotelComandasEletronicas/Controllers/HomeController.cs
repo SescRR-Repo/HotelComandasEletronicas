@@ -276,10 +276,10 @@ namespace HotelComandasEletronicas.Controllers
                 {
                     usuarios = await _context.Usuarios.CountAsync(u => u.Status),
                     produtos = await _context.Produtos.CountAsync(p => p.Status),
-                    hospedes = await _context.RegistrosHospede.CountAsync(h => h.IsAtivo()),
-                    lancamentos = await _context.LancamentosConsumo.CountAsync(l => l.IsAtivo()),
+                    hospedes = await _context.RegistrosHospede.CountAsync(h => h.Status == "Ativo"),  // ? CORRIGIDO: Era h.IsAtivo()
+                    lancamentos = await _context.LancamentosConsumo.CountAsync(l => l.Status == "Ativo"),  // ? CORRIGIDO: Era l.IsAtivo()
                     valorTotal = await _context.RegistrosHospede
-                        .Where(h => h.IsAtivo())
+                        .Where(h => h.Status == "Ativo")  // ? CORRIGIDO: Era h.IsAtivo()
                         .SumAsync(h => h.ValorGastoTotal),
                     ultimaAtualizacao = DateTime.Now
                 };

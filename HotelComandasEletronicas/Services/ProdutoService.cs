@@ -212,7 +212,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => !p.IsAtivo())
+                    .Where(p => p.Status == false)  // ✅ CORRIGIDO: Era !p.IsAtivo()
                     .OrderBy(p => p.Categoria)
                     .ThenBy(p => p.Descricao)
                     .ToListAsync();
@@ -229,7 +229,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.Categoria == categoria && p.IsAtivo())
+                    .Where(p => p.Categoria == categoria && p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .OrderBy(p => p.Descricao)
                     .ToListAsync();
             }
@@ -248,7 +248,7 @@ namespace HotelComandasEletronicas.Services
                     return new List<Produto>();
 
                 return await _context.Produtos
-                    .Where(p => (p.Descricao.Contains(texto) || p.Categoria.Contains(texto)) && p.IsAtivo())
+                    .Where(p => (p.Descricao.Contains(texto) || p.Categoria.Contains(texto)) && p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .OrderBy(p => p.Categoria)
                     .ThenBy(p => p.Descricao)
                     .ToListAsync();
@@ -265,7 +265,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.Valor >= precoMin && p.Valor <= precoMax && p.IsAtivo())
+                    .Where(p => p.Valor >= precoMin && p.Valor <= precoMax && p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .OrderBy(p => p.Valor)
                     .ToListAsync();
             }
@@ -298,13 +298,13 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 var produto = await _context.Produtos.FindAsync(id);
-                if (produto == null || !produto.IsAtivo())
+                if (produto == null || produto.Status != true)  // ✅ CORRIGIDO: Era !produto.IsAtivo()
                     return false;
 
                 // Verificar se tem lançamentos ativos recentes (últimos 30 dias)
                 var temLancamentosRecentes = await _context.LancamentosConsumo
                     .AnyAsync(l => l.ProdutoID == id &&
-                                 l.IsAtivo() &&
+                                 l.Status == "Ativo" &&  // ✅ CORRIGIDO: Era l.IsAtivo()
                                  l.DataHoraLancamento >= DateTime.Now.AddDays(-30));
 
                 return !temLancamentosRecentes;
@@ -321,7 +321,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.LancamentosConsumo
-                    .AnyAsync(l => l.ProdutoID == id && l.IsAtivo());
+                    .AnyAsync(l => l.ProdutoID == id && l.Status == "Ativo");  // ✅ CORRIGIDO: Era l.IsAtivo()
             }
             catch (Exception ex)
             {
@@ -339,7 +339,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.IsAtivo())
+                    .Where(p => p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .Select(p => p.Categoria)
                     .Distinct()
                     .OrderBy(c => c)
@@ -378,11 +378,11 @@ namespace HotelComandasEletronicas.Services
                 var estatisticas = new Dictionary<string, object>
                 {
                     ["TotalProdutos"] = await _context.Produtos.CountAsync(),
-                    ["ProdutosAtivos"] = await _context.Produtos.CountAsync(p => p.IsAtivo()),
-                    ["ProdutosInativos"] = await _context.Produtos.CountAsync(p => !p.IsAtivo()),
+                    ["ProdutosAtivos"] = await _context.Produtos.CountAsync(p => p.Status == true),  // ✅ CORRIGIDO: Era p.IsAtivo()
+                    ["ProdutosInativos"] = await _context.Produtos.CountAsync(p => p.Status == false),  // ✅ CORRIGIDO: Era !p.IsAtivo()
                     ["ValorMedio"] = await CalcularValorMedioAsync(),
-                    ["ProdutoMaisCaro"] = await _context.Produtos.Where(p => p.IsAtivo()).OrderByDescending(p => p.Valor).FirstOrDefaultAsync(),
-                    ["ProdutoMaisBarato"] = await _context.Produtos.Where(p => p.IsAtivo()).OrderBy(p => p.Valor).FirstOrDefaultAsync(),
+                    ["ProdutoMaisCaro"] = await _context.Produtos.Where(p => p.Status == true).OrderByDescending(p => p.Valor).FirstOrDefaultAsync(),  // ✅ CORRIGIDO: Era p.IsAtivo()
+                    ["ProdutoMaisBarato"] = await _context.Produtos.Where(p => p.Status == true).OrderBy(p => p.Valor).FirstOrDefaultAsync(),  // ✅ CORRIGIDO: Era p.IsAtivo()
                     ["CategoriasBebidas"] = await ContarPorCategoriaAsync("Bebidas"),
                     ["CategoriasComidas"] = await ContarPorCategoriaAsync("Comidas"),
                     ["CategoriasServicos"] = await ContarPorCategoriaAsync("Serviços")
@@ -402,10 +402,10 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.IsAtivo())
+                    .Where(p => p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .Select(p => new {
                         Produto = p,
-                        TotalVendido = p.Lancamentos.Where(l => l.IsAtivo()).Sum(l => l.Quantidade)
+                        TotalVendido = p.Lancamentos.Where(l => l.Status == "Ativo").Sum(l => l.Quantidade)  // ✅ CORRIGIDO: Era l.IsAtivo()
                     })
                     .OrderByDescending(x => x.TotalVendido)
                     .Take(quantidade)
@@ -424,10 +424,10 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.IsAtivo())
+                    .Where(p => p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .Select(p => new {
                         Produto = p,
-                        TotalVendido = p.Lancamentos.Where(l => l.IsAtivo()).Sum(l => l.Quantidade)
+                        TotalVendido = p.Lancamentos.Where(l => l.Status == "Ativo").Sum(l => l.Quantidade)  // ✅ CORRIGIDO: Era l.IsAtivo()
                     })
                     .OrderBy(x => x.TotalVendido)
                     .Take(quantidade)
@@ -446,7 +446,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.IsAtivo())
+                    .Where(p => p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .AverageAsync(p => p.Valor);
             }
             catch (Exception ex)
@@ -499,7 +499,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .CountAsync(p => p.Categoria == categoria && p.IsAtivo());
+                    .CountAsync(p => p.Categoria == categoria && p.Status == true);  // ✅ CORRIGIDO: Era p.IsAtivo()
             }
             catch (Exception ex)
             {
@@ -513,7 +513,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.Produtos
-                    .Where(p => p.IsAtivo())
+                    .Where(p => p.Status == true)  // ✅ CORRIGIDO: Era p.IsAtivo()
                     .GroupBy(p => p.Categoria)
                     .ToDictionaryAsync(g => g.Key, g => g.Count());
             }
