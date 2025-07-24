@@ -6,12 +6,12 @@ namespace HotelComandasEletronicas.Services
 {
     public class LogService : ILogService
     {
-        private readonly ComandasDbContext _context;
+        private readonly IDbContextFactory<ComandasDbContext> _contextFactory;
         private readonly ILogger<LogService> _logger;
 
-        public LogService(ComandasDbContext context, ILogger<LogService> logger)
+        public LogService(IDbContextFactory<ComandasDbContext> contextFactory, ILogger<LogService> logger)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _logger = logger;
         }
 
@@ -19,11 +19,22 @@ namespace HotelComandasEletronicas.Services
         public async Task RegistrarLogAsync(string codigoUsuario, string acao, string tabela,
             int? registroId = null, string? detalhesAntes = null, string? detalhesDepois = null)
         {
-            var log = new LogSistema();
-            log.RegistrarAcao(codigoUsuario, acao, tabela, registroId, detalhesAntes, detalhesDepois);
+            try
+            {
+                // Usar uma nova instância do contexto para evitar conflitos
+                using var context = await _contextFactory.CreateDbContextAsync();
+                
+                var log = new LogSistema();
+                log.RegistrarAcao(codigoUsuario, acao, tabela, registroId, detalhesAntes, detalhesDepois);
 
-            _context.LogsSistema.Add(log);
-            await _context.SaveChangesAsync();
+                context.LogsSistema.Add(log);
+                await context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log apenas no console/arquivo para evitar loop infinito
+                _logger.LogError(ex, "Erro ao registrar log no banco de dados");
+            }
         }
 
         public async Task RegistrarLoginAsync(string codigoUsuario, bool sucesso, string? detalhes = null)
@@ -38,7 +49,8 @@ namespace HotelComandasEletronicas.Services
 
         public async Task<List<LogSistema>> BuscarLogsPorUsuarioAsync(string codigoUsuario, DateTime? inicio = null, DateTime? fim = null)
         {
-            var query = _context.LogsSistema.Where(l => l.CodigoUsuario == codigoUsuario);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var query = context.LogsSistema.Where(l => l.CodigoUsuario == codigoUsuario);
 
             if (inicio.HasValue) query = query.Where(l => l.DataHora >= inicio.Value);
             if (fim.HasValue) query = query.Where(l => l.DataHora <= fim.Value);
@@ -48,7 +60,8 @@ namespace HotelComandasEletronicas.Services
 
         public async Task<List<LogSistema>> BuscarLogsPorAcaoAsync(string acao, DateTime? inicio = null, DateTime? fim = null)
         {
-            var query = _context.LogsSistema.Where(l => l.Acao == acao);
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var query = context.LogsSistema.Where(l => l.Acao == acao);
 
             if (inicio.HasValue) query = query.Where(l => l.DataHora >= inicio.Value);
             if (fim.HasValue) query = query.Where(l => l.DataHora <= fim.Value);
@@ -58,7 +71,8 @@ namespace HotelComandasEletronicas.Services
 
         public async Task<List<LogSistema>> BuscarLogsPorPeriodoAsync(DateTime inicio, DateTime fim)
         {
-            return await _context.LogsSistema
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.LogsSistema
                 .Where(l => l.DataHora >= inicio && l.DataHora <= fim)
                 .OrderByDescending(l => l.DataHora)
                 .ToListAsync();
@@ -66,7 +80,8 @@ namespace HotelComandasEletronicas.Services
 
         public async Task<List<LogSistema>> GetLogsAuditoriaAsync(int quantidade = 100)
         {
-            return await _context.LogsSistema
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.LogsSistema
                 .OrderByDescending(l => l.DataHora)
                 .Take(quantidade)
                 .ToListAsync();
@@ -74,18 +89,20 @@ namespace HotelComandasEletronicas.Services
 
         public async Task<Dictionary<string, int>> GetEstatisticasLogsAsync()
         {
-            return await _context.LogsSistema
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.LogsSistema
                 .GroupBy(l => l.Acao)
                 .ToDictionaryAsync(g => g.Key, g => g.Count());
         }
 
         public async Task<bool> LimparLogsAntigosAsync(int diasParaManter = 90)
         {
+            using var context = await _contextFactory.CreateDbContextAsync();
             var dataLimite = DateTime.Now.AddDays(-diasParaManter);
-            var logsAntigos = _context.LogsSistema.Where(l => l.DataHora < dataLimite);
+            var logsAntigos = context.LogsSistema.Where(l => l.DataHora < dataLimite);
 
-            _context.LogsSistema.RemoveRange(logsAntigos);
-            await _context.SaveChangesAsync();
+            context.LogsSistema.RemoveRange(logsAntigos);
+            await context.SaveChangesAsync();
 
             return true;
         }

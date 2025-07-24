@@ -260,6 +260,44 @@ namespace HotelComandasEletronicas.Controllers
             return RedirectToAction("Index");
         }
 
+        /// <summary>
+        /// Testar sistema de registro de hóspedes
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> TestarRegistroHospedes()
+        {
+            try
+            {
+                // Testar verificação de quarto
+                var quartoExiste = await _registroHospedeService.QuartoJaExisteAsync("101");
+                
+                // Testar busca de hóspedes ativos
+                var hospedesAtivos = await _registroHospedeService.ListarAtivosAsync();
+                
+                // Testar contagem
+                var totalAtivos = await _registroHospedeService.ContarHospedesAtivosAsync();
+
+                var resultado = new
+                {
+                    Status = "Sucesso",
+                    QuartoExiste = quartoExiste,
+                    HospedesAtivos = hospedesAtivos.Count,
+                    TotalAtivos = totalAtivos,
+                    DataTeste = DateTime.Now
+                };
+
+                DefinirMensagemSucesso($"Sistema de registro funcionando! Hóspedes ativos: {totalAtivos}");
+                LogarAcao("TesteRegistro", $"Teste realizado com sucesso: {resultado}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro no teste de registro");
+                DefinirMensagemErro($"Erro no teste: {ex.Message}");
+            }
+
+            return RedirectToAction("Index");
+        }
+
         #endregion
 
         #region APIs Públicas para Dashboard

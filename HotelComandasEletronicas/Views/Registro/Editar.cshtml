@@ -1,0 +1,400 @@
+@model HotelComandasEletronicas.ViewModels.RegistroHospedeViewModel
+@{
+    ViewData["Title"] = "Editar Hóspede - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-recepcao mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-user-edit me-3"></i>
+                Editar Dados do Hóspede
+            </h2>
+            <p class="mb-0 fs-5">Alterar informações da hospedagem</p>
+            <small>Quarto: <strong>@Model.NumeroQuarto</strong> | Check-in: <strong>@Model.DataRegistro.ToString("dd/MM/yyyy HH:mm")</strong></small>
+        </div>
+    </div>
+</div>
+
+<!-- Avisos Importantes -->
+@if (ViewBag.TemConsumosAtivos == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Atenção:</strong> Este hóspede possui consumos registrados. 
+                Alterações no número do quarto ou nome podem afetar os lançamentos existentes.
+                <br><small>Valor gasto atual: <strong>@Model.ValorGastoTotal.ToString("C2")</strong></small>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Formulário de Edição -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Alterar Dados
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <!-- Alertas de erro -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Corrija os erros abaixo:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Informações Atuais -->
+                <div class="card border-info mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Dados Atuais da Hospedagem
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Check-in:</strong> @Model.DataRegistro.ToString("dd/MM/yyyy HH:mm")<br>
+                                <strong>Status:</strong> 
+                                <span class="badge @(Model.IsAtivo ? "bg-success" : "bg-secondary")">
+                                    @Model.Status
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Valor Gasto:</strong> <span class="text-success fw-bold">@Model.ValorGastoTotal.ToString("C2")</span><br>
+                                <strong>Registrado por:</strong> <code>@Model.UsuarioRegistro</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulário -->
+                <form asp-action="Editar" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(m => m.ID)
+
+                    <div class="row">
+                        <!-- Número do Quarto -->
+                        <div class="col-lg-4 mb-3">
+                            <label asp-for="NumeroQuarto" class="form-label">
+                                <i class="fas fa-door-closed me-2"></i>
+                                Número do Quarto *
+                            </label>
+                            <input asp-for="NumeroQuarto" type="text" class="form-control fs-5 fw-bold text-center" 
+                                   placeholder="Ex: 101, 205A, Chalé 3" 
+                                   onblur="verificarQuarto()" 
+                                   style="background: #f8f9fa;" required />
+                            <span asp-validation-for="NumeroQuarto" class="text-danger small"></span>
+                            <div id="quartoStatus" class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Quarto atual: @Model.NumeroQuarto
+                            </div>
+                        </div>
+
+                        <!-- Nome do Cliente -->
+                        <div class="col-lg-8 mb-3">
+                            <label asp-for="NomeCliente" class="form-label">
+                                <i class="fas fa-user me-2"></i>
+                                Nome Completo do Cliente *
+                            </label>
+                            <input asp-for="NomeCliente" type="text" class="form-control" 
+                                   placeholder="Nome completo do hóspede" 
+                                   style="text-transform: capitalize;" required />
+                            <span asp-validation-for="NomeCliente" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-user-tag me-1"></i>
+                                Nome atual: @Model.NomeCliente
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Telefone -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="TelefoneCliente" class="form-label">
+                                <i class="fas fa-phone me-2"></i>
+                                Telefone de Contato *
+                            </label>
+                            <input asp-for="TelefoneCliente" type="tel" class="form-control" 
+                                   placeholder="(95) 99999-1234" 
+                                   onkeyup="aplicarMascaraTelefone(this)" required />
+                            <span asp-validation-for="TelefoneCliente" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-phone-alt me-1"></i>
+                                Telefone atual: @Model.TelefoneCliente
+                            </div>
+                        </div>
+
+                        <!-- Tempo de Hospedagem (informativo) -->
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-clock me-2"></i>
+                                Tempo de Hospedagem
+                            </label>
+                            <input type="text" class="form-control" 
+                                   value="@((DateTime.Now - Model.DataRegistro).Days) dia(s)" 
+                                   readonly style="background: #e9ecef;" />
+                            <div class="form-text">
+                                <i class="fas fa-calendar-day me-1"></i>
+                                Check-in em @Model.DataRegistro.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumo das Alterações -->
+                    <div class="card border-warning mb-4" id="resumoAlteracoes" style="display: none;">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-clipboard-list me-2"></i>
+                                Resumo das Alterações
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Novo Quarto:</strong> <span id="novoQuarto">-</span><br>
+                                    <strong>Novo Nome:</strong> <span id="novoNome">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Novo Telefone:</strong> <span id="novoTelefone">-</span><br>
+                                    <strong>Valor Gasto:</strong> <span class="text-success fw-bold">@Model.ValorGastoTotal.ToString("C2")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="row">
+                        <div class="col-lg-6 mb-2">
+                            <button type="submit" class="btn btn-warning w-100 btn-lg" id="btnSalvar">
+                                <i class="fas fa-save me-2"></i>
+                                Salvar Alterações
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="reset" class="btn btn-outline-secondary w-100" onclick="restaurarDados()">
+                                <i class="fas fa-undo me-2"></i>
+                                Restaurar
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <a href="/registro/detalhes/@Model.ID" class="btn btn-outline-info w-100">
+                                <i class="fas fa-eye me-2"></i>
+                                Detalhes
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Adicionais -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Ações Disponíveis
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 mb-2">
+                        <a href="/registro" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-list me-2"></i>
+                            Lista de Hóspedes
+                        </a>
+                    </div>
+                    <div class="col-lg-3 mb-2">
+                        <a href="/lancamento" class="btn btn-outline-success w-100">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Novo Lançamento
+                        </a>
+                    </div>
+                    <div class="col-lg-3 mb-2">
+                        <button type="button" class="btn btn-outline-info w-100" onclick="atualizarValorGasto()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Atualizar Valor
+                        </button>
+                    </div>
+                    @if (Model.IsAtivo)
+                    {
+                        <div class="col-lg-3 mb-2">
+                            <button type="button" class="btn btn-outline-danger w-100" 
+                                    onclick="confirmarFinalizacao()">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                Finalizar Hospedagem
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Dados originais para comparação
+        const dadosOriginais = {
+            quarto: '@Model.NumeroQuarto',
+            nome: '@Model.NomeCliente',
+            telefone: '@Model.TelefoneCliente'
+        };
+
+        // Verificar se quarto já existe (exceto o atual)
+        function verificarQuarto() {
+            const quarto = document.getElementById('NumeroQuarto').value.trim();
+            const statusDiv = document.getElementById('quartoStatus');
+
+            if (!quarto) {
+                statusDiv.innerHTML = '<i class="fas fa-info-circle me-1"></i>Quarto atual: ' + dadosOriginais.quarto;
+                statusDiv.className = 'form-text';
+                return;
+            }
+
+            if (quarto === dadosOriginais.quarto) {
+                statusDiv.innerHTML = '<i class="fas fa-check-circle me-1"></i>Quarto atual (sem alteração)';
+                statusDiv.className = 'form-text text-info';
+                verificarAlteracoes();
+                return;
+            }
+
+            fetch(`/registro/verificarquarto?numeroQuarto=${encodeURIComponent(quarto)}&excluirId=@Model.ID`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Erro ao verificar quarto';
+                        statusDiv.className = 'form-text text-warning';
+                    } else if (data.existe) {
+                        statusDiv.innerHTML = '<i class="fas fa-times-circle me-1"></i>Quarto já está ocupado!';
+                        statusDiv.className = 'form-text text-danger';
+                    } else {
+                        statusDiv.innerHTML = '<i class="fas fa-check-circle me-1"></i>Quarto disponível para alteração';
+                        statusDiv.className = 'form-text text-success';
+                    }
+                    verificarAlteracoes();
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Erro na verificação';
+                    statusDiv.className = 'form-text text-warning';
+                });
+        }
+
+        // Aplicar máscara de telefone
+        function aplicarMascaraTelefone(elemento) {
+            let value = elemento.value.replace(/\D/g, '');
+            
+            if (value.length >= 11) {
+                value = value.substring(0, 11);
+                elemento.value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length >= 10) {
+                elemento.value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else if (value.length >= 6) {
+                elemento.value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else if (value.length >= 2) {
+                elemento.value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            } else {
+                elemento.value = value;
+            }
+
+            verificarAlteracoes();
+        }
+
+        // Verificar se houve alterações
+        function verificarAlteracoes() {
+            const quarto = document.getElementById('NumeroQuarto').value.trim();
+            const nome = document.getElementById('NomeCliente').value.trim();
+            const telefone = document.getElementById('TelefoneCliente').value.trim();
+
+            const houveAlteracao = quarto !== dadosOriginais.quarto || 
+                                 nome !== dadosOriginais.nome || 
+                                 telefone !== dadosOriginais.telefone;
+
+            if (houveAlteracao && quarto && nome && telefone) {
+                document.getElementById('novoQuarto').textContent = quarto;
+                document.getElementById('novoNome').textContent = nome;
+                document.getElementById('novoTelefone').textContent = telefone;
+                document.getElementById('resumoAlteracoes').style.display = 'block';
+            } else {
+                document.getElementById('resumoAlteracoes').style.display = 'none';
+            }
+        }
+
+        // Restaurar dados originais
+        function restaurarDados() {
+            document.getElementById('NumeroQuarto').value = dadosOriginais.quarto;
+            document.getElementById('NomeCliente').value = dadosOriginais.nome;
+            document.getElementById('TelefoneCliente').value = dadosOriginais.telefone;
+            document.getElementById('quartoStatus').innerHTML = '<i class="fas fa-info-circle me-1"></i>Quarto atual: ' + dadosOriginais.quarto;
+            document.getElementById('quartoStatus').className = 'form-text';
+            document.getElementById('resumoAlteracoes').style.display = 'none';
+        }
+
+        // Atualizar valor gasto
+        function atualizarValorGasto() {
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch(`/registro/atualizarvalorgasto/@Model.ID`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert(`Valor atualizado: ${data.valorFormatado}`);
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao atualizar valor. Tente novamente.');
+            });
+        }
+
+        // Confirmar finalização
+        function confirmarFinalizacao() {
+            if (confirm('Tem certeza que deseja finalizar esta hospedagem?\n\nEsta ação liberará o quarto e encerrará o período de hospedagem.')) {
+                window.location.href = '/registro/detalhes/@Model.ID';
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar alterações em tempo real
+            document.getElementById('NumeroQuarto').addEventListener('input', verificarAlteracoes);
+            document.getElementById('NomeCliente').addEventListener('input', verificarAlteracoes);
+            document.getElementById('TelefoneCliente').addEventListener('input', verificarAlteracoes);
+
+            // Capitalizar nome automaticamente
+            document.getElementById('NomeCliente').addEventListener('input', function() {
+                this.value = this.value.toLowerCase().replace(/(?:^|\s)\S/g, function(a) { 
+                    return a.toUpperCase(); 
+                });
+            });
+        });
+    </script>
+}

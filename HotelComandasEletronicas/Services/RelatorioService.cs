@@ -66,7 +66,7 @@ namespace HotelComandasEletronicas.Services
         public async Task<decimal> GetTotalVendasPeriodoAsync(DateTime inicio, DateTime fim)
         {
             return await _context.LancamentosConsumo
-                .Where(l => l.DataHoraLancamento >= inicio && l.DataHoraLancamento <= fim && l.IsAtivo())
+                .Where(l => l.DataHoraLancamento >= inicio && l.DataHoraLancamento <= fim && l.Status == "Ativo")
                 .SumAsync(l => l.ValorTotal);
         }
 

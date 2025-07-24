@@ -1,0 +1,428 @@
+@model HotelComandasEletronicas.ViewModels.LancamentoViewModel
+@{
+    ViewData["Title"] = "Lançamento de Consumo - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-garcom mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-plus-circle me-3"></i>
+                Lançamento de Consumo
+            </h2>
+            <p class="mb-0 fs-5">Registrar consumo de hóspede</p>
+            <small>Usuário: <strong>@ViewBag.UsuarioLancamento</strong></small>
+        </div>
+    </div>
+</div>
+
+<!-- Card Principal de Lançamento -->
+<div class="row justify-content-center mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    Novo Lançamento
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <!-- Alertas de erro -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Corrija os erros abaixo:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Formulário de Lançamento -->
+                <form asp-action="Lancar" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div class="row">
+                        <!-- Seleção de Hóspede -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="RegistroHospedeID" class="form-label">
+                                <i class="fas fa-bed me-2"></i>
+                                Hóspede / Quarto *
+                            </label>
+                            <select asp-for="RegistroHospedeID" class="form-select" id="selectHospede" required>
+                                <option value="">Selecione o hóspede</option>
+                                @if (ViewBag.HospedesAtivos != null)
+                                {
+                                    @foreach (var hospede in ViewBag.HospedesAtivos as List<HotelComandasEletronicas.Models.RegistroHospede>)
+                                    {
+                                        <option value="@hospede.ID" data-quarto="@hospede.NumeroQuarto" data-nome="@hospede.NomeCliente" data-telefone="@hospede.TelefoneCliente">
+                                            Quarto @hospede.NumeroQuarto - @hospede.NomeCliente
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="RegistroHospedeID" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Escolha o quarto e hóspede para o lançamento
+                            </div>
+                        </div>
+
+                        <!-- Seleção de Categoria -->
+                        <div class="col-lg-6 mb-3">
+                            <label for="selectCategoria" class="form-label">
+                                <i class="fas fa-list me-2"></i>
+                                Categoria do Produto
+                            </label>
+                            <select id="selectCategoria" class="form-select" onchange="carregarProdutosPorCategoria()">
+                                <option value="">Selecione a categoria</option>
+                                @if (ViewBag.ProdutosPorCategoria != null)
+                                {
+                                    @foreach (var categoria in (ViewBag.ProdutosPorCategoria as Dictionary<string, List<HotelComandasEletronicas.Models.Produto>>).Keys)
+                                    {
+                                        <option value="@categoria">@categoria</option>
+                                    }
+                                }
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-filter me-1"></i>
+                                Filtre produtos por categoria
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Seleção de Produto -->
+                        <div class="col-lg-8 mb-3">
+                            <label asp-for="ProdutoID" class="form-label">
+                                <i class="fas fa-box me-2"></i>
+                                Produto *
+                            </label>
+                            <select asp-for="ProdutoID" class="form-select" id="selectProduto" onchange="atualizarValorProduto()" required>
+                                <option value="">Primeiro selecione uma categoria</option>
+                            </select>
+                            <span asp-validation-for="ProdutoID" class="text-danger small"></span>
+                            <div class="form-text" id="infoProduto">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Selecione o produto desejado
+                            </div>
+                        </div>
+
+                        <!-- Quantidade -->
+                        <div class="col-lg-4 mb-3">
+                            <label asp-for="Quantidade" class="form-label">
+                                <i class="fas fa-calculator me-2"></i>
+                                Quantidade *
+                            </label>
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="diminuirQuantidade()">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input asp-for="Quantidade" type="number" class="form-control text-center fs-5 fw-bold" 
+                                       step="0.01" min="0.01" max="999.99" value="1"
+                                       onchange="calcularTotal()" oninput="calcularTotal()" required />
+                                <button type="button" class="btn btn-outline-secondary" onclick="aumentarQuantidade()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Quantidade" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label asp-for="Observacoes" class="form-label">
+                                <i class="fas fa-comment me-2"></i>
+                                Observações (opcional)
+                            </label>
+                            <textarea asp-for="Observacoes" class="form-control" rows="2" 
+                                      placeholder="Ex: Sem gelo, quente, bem passado, etc."></textarea>
+                            <span asp-validation-for="Observacoes" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Resumo do Lançamento -->
+                    <div class="card border-info mb-3" id="resumoLancamento" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-receipt me-2"></i>
+                                Resumo do Lançamento
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Hóspede:</strong> <span id="resumoHospede">-</span><br>
+                                    <strong>Produto:</strong> <span id="resumoProduto">-</span>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <strong>Quantidade:</strong> <span id="resumoQuantidade">-</span><br>
+                                    <strong>Valor Total:</strong> <span id="resumoTotal" class="fs-4 text-success fw-bold">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="row">
+                        <div class="col-lg-6 mb-2">
+                            <button type="submit" class="btn btn-success w-100 btn-lg" id="btnLancar" disabled>
+                                <i class="fas fa-check me-2"></i>
+                                Confirmar Lançamento
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="reset" class="btn btn-outline-secondary w-100" onclick="limparFormulario()">
+                                <i class="fas fa-eraser me-2"></i>
+                                Limpar
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <a href="/lancamento/historico" class="btn btn-outline-info w-100">
+                                <i class="fas fa-history me-2"></i>
+                                Histórico
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Produtos por Categoria (Seleção Rápida) -->
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-3">
+            <i class="fas fa-bolt me-2"></i>
+            Seleção Rápida de Produtos
+        </h4>
+    </div>
+
+    @if (ViewBag.ProdutosPorCategoria != null)
+    {
+        @foreach (var categoria in (ViewBag.ProdutosPorCategoria as Dictionary<string, List<HotelComandasEletronicas.Models.Produto>>))
+        {
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header @(categoria.Key == "Bebidas" ? "bg-info" : categoria.Key == "Comidas" ? "bg-warning text-dark" : "bg-success") text-white">
+                        <h6 class="mb-0">
+                            <i class="@(categoria.Key == "Bebidas" ? "fas fa-glass-whiskey" : categoria.Key == "Comidas" ? "fas fa-utensils" : "fas fa-concierge-bell") me-2"></i>
+                            @categoria.Key
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            @foreach (var produto in categoria.Value.Take(6))
+                            {
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-start produto-rapido"
+                                            data-produto-id="@produto.ID"
+                                            data-produto-nome="@produto.Descricao"
+                                            data-produto-valor="@produto.Valor"
+                                            data-categoria="@categoria.Key"
+                                            onclick="selecionarProdutoRapido(this)">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-truncate">@produto.Descricao</small>
+                                            <small class="text-success fw-bold">@produto.FormatarValor()</small>
+                                        </div>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        @if (categoria.Value.Count > 6)
+                        {
+                            <div class="text-center mt-2">
+                                <small class="text-muted">+@(categoria.Value.Count - 6) produtos</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Variáveis globais
+        let valorUnitarioAtual = 0;
+
+        // Carregar produtos por categoria
+        function carregarProdutosPorCategoria() {
+            const categoria = document.getElementById('selectCategoria').value;
+            const selectProduto = document.getElementById('selectProduto');
+
+            if (!categoria) {
+                selectProduto.innerHTML = '<option value="">Primeiro selecione uma categoria</option>';
+                return;
+            }
+
+            fetch(`/lancamento/buscarprodutosporcategoria?categoria=${encodeURIComponent(categoria)}`)
+                .then(response => response.json())
+                .then(data => {
+                    selectProduto.innerHTML = '<option value="">Selecione o produto</option>';
+                    data.forEach(produto => {
+                        const option = document.createElement('option');
+                        option.value = produto.id;
+                        option.textContent = `${produto.descricao} - ${produto.valorFormatado}`;
+                        option.setAttribute('data-valor', produto.valor);
+                        option.setAttribute('data-descricao', produto.descricao);
+                        selectProduto.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar produtos:', error);
+                    selectProduto.innerHTML = '<option value="">Erro ao carregar produtos</option>';
+                });
+        }
+
+        // Atualizar valor do produto selecionado
+        function atualizarValorProduto() {
+            const selectProduto = document.getElementById('selectProduto');
+            const option = selectProduto.selectedOptions[0];
+
+            if (option && option.value) {
+                valorUnitarioAtual = parseFloat(option.getAttribute('data-valor'));
+                const descricao = option.getAttribute('data-descricao');
+
+                document.getElementById('infoProduto').innerHTML = 
+                    `<i class="fas fa-info-circle me-1"></i>Valor unitário: <strong class="text-success">${valorUnitarioAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>`;
+
+                calcularTotal();
+            } else {
+                valorUnitarioAtual = 0;
+                document.getElementById('infoProduto').innerHTML = 
+                    '<i class="fas fa-info-circle me-1"></i>Selecione o produto desejado';
+            }
+        }
+
+        // Calcular total do lançamento
+        function calcularTotal() {
+            const quantidade = parseFloat(document.querySelector('input[name="Quantidade"]').value) || 0;
+            const total = valorUnitarioAtual * quantidade;
+
+            // Atualizar resumo
+            atualizarResumo();
+
+            // Habilitar/desabilitar botão de lançamento
+            const btnLancar = document.getElementById('btnLancar');
+            const hospedeSelecionado = document.getElementById('selectHospede').value;
+            const produtoSelecionado = document.getElementById('selectProduto').value;
+
+            btnLancar.disabled = !(hospedeSelecionado && produtoSelecionado && quantidade > 0 && valorUnitarioAtual > 0);
+        }
+
+        // Atualizar resumo do lançamento
+        function atualizarResumo() {
+            const hospedeSelect = document.getElementById('selectHospede');
+            const produtoSelect = document.getElementById('selectProduto');
+            const quantidade = parseFloat(document.querySelector('input[name="Quantidade"]').value) || 0;
+            const total = valorUnitarioAtual * quantidade;
+
+            const resumoDiv = document.getElementById('resumoLancamento');
+
+            if (hospedeSelect.value && produtoSelect.value && quantidade > 0) {
+                const hospedeOption = hospedeSelect.selectedOptions[0];
+                const produtoOption = produtoSelect.selectedOptions[0];
+
+                document.getElementById('resumoHospede').textContent = hospedeOption.textContent;
+                document.getElementById('resumoProduto').textContent = produtoOption.getAttribute('data-descricao');
+                document.getElementById('resumoQuantidade').textContent = quantidade;
+                document.getElementById('resumoTotal').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                resumoDiv.style.display = 'block';
+            } else {
+                resumoDiv.style.display = 'none';
+            }
+        }
+
+        // Aumentar quantidade
+        function aumentarQuantidade() {
+            const input = document.querySelector('input[name="Quantidade"]');
+            const valor = parseFloat(input.value) || 0;
+            input.value = (valor + 1).toFixed(2);
+            calcularTotal();
+        }
+
+        // Diminuir quantidade
+        function diminuirQuantidade() {
+            const input = document.querySelector('input[name="Quantidade"]');
+            const valor = parseFloat(input.value) || 0;
+            if (valor > 0.01) {
+                input.value = (valor - 1).toFixed(2);
+                calcularTotal();
+            }
+        }
+
+        // Seleção rápida de produto
+        function selecionarProdutoRapido(button) {
+            const produtoId = button.getAttribute('data-produto-id');
+            const produtoNome = button.getAttribute('data-produto-nome');
+            const produtoValor = button.getAttribute('data-produto-valor');
+            const categoria = button.getAttribute('data-categoria');
+
+            // Selecionar categoria
+            document.getElementById('selectCategoria').value = categoria;
+            carregarProdutosPorCategoria();
+
+            // Aguardar o carregamento dos produtos e selecionar
+            setTimeout(() => {
+                document.getElementById('selectProduto').value = produtoId;
+                atualizarValorProduto();
+            }, 300);
+        }
+
+        // Limpar formulário
+        function limparFormulario() {
+            document.getElementById('selectHospede').value = '';
+            document.getElementById('selectCategoria').value = '';
+            document.getElementById('selectProduto').innerHTML = '<option value="">Primeiro selecione uma categoria</option>';
+            document.querySelector('input[name="Quantidade"]').value = '1';
+            document.querySelector('textarea[name="Observacoes"]').value = '';
+            document.getElementById('resumoLancamento').style.display = 'none';
+            document.getElementById('btnLancar').disabled = true;
+            valorUnitarioAtual = 0;
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Recalcular quando mudar hóspede
+            document.getElementById('selectHospede').addEventListener('change', calcularTotal);
+
+            // Recalcular quando mudar quantidade
+            document.querySelector('input[name="Quantidade"]').addEventListener('input', calcularTotal);
+
+            // Máscara para quantidade
+            const quantidadeInput = document.querySelector('input[name="Quantidade"]');
+            quantidadeInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 999.99) this.value = 999.99;
+            });
+        });
+
+        // Bootstrap form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

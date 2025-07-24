@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using HotelComandasEletronicas.Models;
+using HotelComandasEletronicas.Services;
 
 namespace HotelComandasEletronicas.Controllers
 {
     public class BaseController : Controller
     {
+        protected ILogService? _logService;
+
         #region Propriedades de Sessão
 
         protected Usuario? UsuarioLogado
@@ -190,18 +193,111 @@ namespace HotelComandasEletronicas.Controllers
 
         #endregion
 
-        #region Métodos de Log e Auditoria
+        #region Métodos de Log e Auditoria - MELHORADOS
 
-        protected void LogarAcao(string acao, string detalhes = "")
+        /// <summary>
+        /// Loga ação na tabela LOGS_SISTEMA do banco de dados
+        /// </summary>
+        protected void LogarAcao(string acao, string detalhes = "", string tabela = "SISTEMA", int? registroId = null)
         {
-            var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Local";
+            // Executar de forma assíncrona sem bloquear
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // Obter LogService se não foi injetado ainda
+                    _logService ??= HttpContext.RequestServices.GetService<ILogService>();
 
-            // Implementar log específico aqui se necessário
-            // Por ora, usar o logger padrão
-            var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
-            logger?.LogInformation("Usuário {Usuario} executou ação: {Acao}. Detalhes: {Detalhes}. IP: {IP}",
-                usuario, acao, detalhes, ip);
+                    if (_logService == null) return;
+
+                    var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+                    // Gravar no banco através do LogService
+                    await _logService.RegistrarLogAsync(
+                        codigoUsuario: usuario,
+                        acao: acao,
+                        tabela: tabela,
+                        registroId: registroId,
+                        detalhesAntes: null,
+                        detalhesDepois: detalhes
+                    );
+
+                    // Também manter o log no Serilog para desenvolvimento
+                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                    logger?.LogInformation("Usuário {Usuario} executou ação: {Acao}. Detalhes: {Detalhes}. IP: {IP}",
+                        usuario, acao, detalhes, ip);
+                }
+                catch (Exception ex)
+                {
+                    // Se falhar o log personalizado, pelo menos logar o erro
+                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                    logger?.LogError(ex, "Erro ao registrar log personalizado para ação: {Acao}", acao);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Loga ação de login específica
+        /// </summary>
+        protected void LogarLogin(string usuario, bool sucesso, string detalhes = "")
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logService ??= HttpContext.RequestServices.GetService<ILogService>();
+
+                    if (_logService != null)
+                    {
+                        await _logService.RegistrarLoginAsync(usuario, sucesso, detalhes);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                    logger?.LogError(ex, "Erro ao registrar log de login");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Loga alteração em registro específico (para auditoria completa)
+        /// </summary>
+        protected void LogarAlteracao(string acao, string tabela, int registroId,
+            object? estadoAnterior = null, object? estadoPosterior = null)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logService ??= HttpContext.RequestServices.GetService<ILogService>();
+
+                    if (_logService == null) return;
+
+                    var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
+
+                    var detalhesAntes = estadoAnterior != null ?
+                        _logService.FormatarDetalhesJson(estadoAnterior) : null;
+
+                    var detalhesDepois = estadoPosterior != null ?
+                        _logService.FormatarDetalhesJson(estadoPosterior) : null;
+
+                    await _logService.RegistrarLogAsync(
+                        codigoUsuario: usuario,
+                        acao: acao,
+                        tabela: tabela,
+                        registroId: registroId,
+                        detalhesAntes: detalhesAntes,
+                        detalhesDepois: detalhesDepois
+                    );
+                }
+                catch (Exception ex)
+                {
+                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                    logger?.LogError(ex, "Erro ao registrar log de alteração");
+                }
+            });
         }
 
         #endregion
@@ -210,6 +306,9 @@ namespace HotelComandasEletronicas.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            // Obter o LogService para usar nos métodos de log
+            _logService = HttpContext.RequestServices.GetService<ILogService>();
+
             // Passar dados do usuário para todas as views
             ViewBag.UsuarioLogado = UsuarioLogado;
             ViewBag.CodigoUsuarioAtual = CodigoUsuarioAtual;
@@ -220,10 +319,39 @@ namespace HotelComandasEletronicas.Controllers
             base.OnActionExecuting(context);
         }
 
+        public override void OnActionExecuted(ActionExecutedContext context)
+        {
+            // Log automático de todas as ações (opcional)
+            var actionName = context.ActionDescriptor.DisplayName ?? "Unknown";
+            var controllerName = context.Controller.GetType().Name;
+
+            // Só loga ações importantes, não todas
+            if (ShouldLogAction(actionName))
+            {
+                LogarAcao($"Acao{controllerName}", $"Executou: {actionName}");
+            }
+
+            base.OnActionExecuted(context);
+        }
+
+        /// <summary>
+        /// Define quais ações devem ser logadas automaticamente
+        /// </summary>
+        private bool ShouldLogAction(string actionName)
+        {
+            var actionsToLog = new[]
+            {
+                "Login", "Logout", "Cadastrar", "Editar", "Inativar", "Ativar",
+                "Cancelar", "Finalizar", "Registrar", "Alterar"
+            };
+
+            return actionsToLog.Any(action => actionName.Contains(action, StringComparison.OrdinalIgnoreCase));
+        }
+
         #endregion
     }
 
-    #region Attributes de Autorização
+    #region Attributes de Autorização (mantidos iguais)
 
     public class RequireLoginAttribute : ActionFilterAttribute
     {

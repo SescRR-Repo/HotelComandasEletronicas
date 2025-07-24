@@ -111,11 +111,33 @@ namespace HotelComandasEletronicas.Data
         // Método para popular dados iniciais
         public void PopularDadosIniciais()
         {
-            // Verificar se já existem dados
-            if (!Usuarios.Any())
+            try
             {
-                // Criar usuário supervisor inicial
-                var supervisorInicial = new Usuario
+                Console.WriteLine(" Iniciando população de dados iniciais...");
+
+                // ===================================
+                //  CRIAR USUÁRIOS INICIAIS
+                // ===================================
+                if (!Usuarios.Any())
+                {
+                    Console.WriteLine(" Criando usuários iniciais...");
+
+                    var usuariosIniciais = new List<Usuario>
+            {
+                //  USUÁRIO ADMIN PRINCIPAL - NOVO!
+                new Usuario
+                {
+                    Nome = "Administrador do Sistema",
+                    Login = "admin",
+                    CodigoID = "00", // Código especial para admin
+                    Perfil = "Supervisor",
+                    Senha = BCrypt.Net.BCrypt.HashPassword("admin123"), // Senha temporária
+                    Status = true,
+                    DataCadastro = DateTime.Now
+                },
+
+                //  SUPERVISOR PADRÃO (Maria Silva)
+                new Usuario
                 {
                     Nome = "Maria Silva",
                     Login = "mariasilva01",
@@ -124,22 +146,22 @@ namespace HotelComandasEletronicas.Data
                     Senha = BCrypt.Net.BCrypt.HashPassword("123456"), // Senha temporária
                     Status = true,
                     DataCadastro = DateTime.Now
-                };
+                },
 
-                // Criar usuário recepção inicial
-                var recepcaoInicial = new Usuario
+                //  RECEPÇÃO PADRÃO (Ana Clara)
+                new Usuario
                 {
-                    Nome = "Ana Clara",
+                    Nome = "Ana Clara Santos",
                     Login = "anacclara01",
                     CodigoID = "03",
                     Perfil = "Recepção",
                     Senha = BCrypt.Net.BCrypt.HashPassword("123456"), // Senha temporária
                     Status = true,
                     DataCadastro = DateTime.Now
-                };
+                },
 
-                // Criar garçom inicial
-                var garcomInicial = new Usuario
+                //  GARÇOM PADRÃO (João Santos)
+                new Usuario
                 {
                     Nome = "João Santos",
                     Login = "joaosantos18",
@@ -148,31 +170,233 @@ namespace HotelComandasEletronicas.Data
                     Senha = "", // Garçom não usa senha, apenas código
                     Status = true,
                     DataCadastro = DateTime.Now
-                };
+                }
+            };
 
-                Usuarios.AddRange(supervisorInicial, recepcaoInicial, garcomInicial);
-            }
-
-            // Verificar se já existem produtos
-            if (!Produtos.Any())
-            {
-                var produtosIniciais = new List<Produto>
+                    Usuarios.AddRange(usuariosIniciais);
+                    SaveChanges();
+                    Console.WriteLine($"{usuariosIniciais.Count} usuários criados com sucesso!");
+                }
+                else
                 {
-                    new Produto { Descricao = "Água Mineral", Valor = 3.50m, Categoria = "Bebidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Refrigerante Lata", Valor = 5.00m, Categoria = "Bebidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Cerveja", Valor = 8.00m, Categoria = "Bebidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Suco Natural", Valor = 6.50m, Categoria = "Bebidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Sanduíche Natural", Valor = 12.00m, Categoria = "Comidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Porção de Batata", Valor = 15.00m, Categoria = "Comidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Hambúrguer", Valor = 18.00m, Categoria = "Comidas", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Toalha Extra", Valor = 10.00m, Categoria = "Serviços", UsuarioCadastro = "mariasilva01" },
-                    new Produto { Descricao = "Serviço de Quarto", Valor = 25.00m, Categoria = "Serviços", UsuarioCadastro = "mariasilva01" }
+                    Console.WriteLine("Usuários já existem no banco.");
+                }
+
+                // ===================================
+                //  CRIAR PRODUTOS INICIAIS (MELHORADOS)
+                // ===================================
+                if (!Produtos.Any())
+                {
+                    Console.WriteLine(" Criando produtos iniciais...");
+
+                    var produtosIniciais = new List<Produto>
+            {
+                //  BEBIDAS (MELHORADAS)
+                new Produto {
+                    Descricao = "Água Mineral 500ml",
+                    Valor = 3.50m,
+                    Categoria = "Bebidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Refrigerante Lata 350ml",
+                    Valor = 5.00m,
+                    Categoria = "Bebidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Cerveja Long Neck",
+                    Valor = 8.00m,
+                    Categoria = "Bebidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Suco Natural 300ml",
+                    Valor = 6.50m,
+                    Categoria = "Bebidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Caipirinha",
+                    Valor = 12.00m,
+                    Categoria = "Bebidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+
+                // 🍽 COMIDAS (MELHORADAS)
+                new Produto {
+                    Descricao = "Sanduíche Natural",
+                    Valor = 15.00m,
+                    Categoria = "Comidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Porção de Batata Frita",
+                    Valor = 18.00m,
+                    Categoria = "Comidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Hambúrguer Artesanal",
+                    Valor = 25.00m,
+                    Categoria = "Comidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Porção de Pastel",
+                    Valor = 20.00m,
+                    Categoria = "Comidas",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+
+                // 🏨 SERVIÇOS (MELHORADOS)
+                new Produto {
+                    Descricao = "Toalha Extra",
+                    Valor = 10.00m,
+                    Categoria = "Serviços",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Serviço de Quarto",
+                    Valor = 30.00m,
+                    Categoria = "Serviços",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                },
+                new Produto {
+                    Descricao = "Lavanderia Express",
+                    Valor = 25.00m,
+                    Categoria = "Serviços",
+                    UsuarioCadastro = "admin",
+                    DataCadastro = DateTime.Now,
+                    Status = true
+                }
+            };
+
+                    Produtos.AddRange(produtosIniciais);
+                    SaveChanges();
+                    Console.WriteLine($" {produtosIniciais.Count} produtos criados com sucesso!");
+                }
+                else
+                {
+                    Console.WriteLine(" Produtos já existem no banco.");
+                }
+
+                // ===================================
+                //  CRIAR REGISTROS DE HÓSPEDES DE TESTE
+                // ===================================
+                if (!RegistrosHospede.Any())
+                {
+                    Console.WriteLine(" Criando hóspedes de teste...");
+
+                    var hospedesTest = new List<RegistroHospede>
+            {
+                new RegistroHospede
+                {
+                    NumeroQuarto = "101",
+                    NomeCliente = "João Silva",
+                    TelefoneCliente = "(95) 99999-1234",
+                    DataRegistro = DateTime.Now.AddDays(-2),
+                    ValorGastoTotal = 0.00m,
+                    Status = "Ativo",
+                    UsuarioRegistro = "anacclara01"
+                },
+                new RegistroHospede
+                {
+                    NumeroQuarto = "205",
+                    NomeCliente = "Maria Santos",
+                    TelefoneCliente = "(95) 99888-5678",
+                    DataRegistro = DateTime.Now.AddDays(-1),
+                    ValorGastoTotal = 0.00m,
+                    Status = "Ativo",
+                    UsuarioRegistro = "anacclara01"
+                }
+            };
+
+                    RegistrosHospede.AddRange(hospedesTest);
+                    SaveChanges();
+                    Console.WriteLine($" {hospedesTest.Count} registros de hóspedes de teste criados!");
+                }
+                else
+                {
+                    Console.WriteLine(" Registros de hóspedes já existem no banco.");
+                }
+
+                // ===================================
+                //  LOG INICIAL DO SISTEMA
+                // ===================================
+                if (!LogsSistema.Any())
+                {
+                    var logInicial = new LogSistema
+                    {
+                        DataHora = DateTime.Now,
+                        CodigoUsuario = "admin",
+                        Acao = "InicializacaoSistema",
+                        Tabela = "SISTEMA",
+                        RegistroID = null,
+                        DetalhesAntes = null,
+                        DetalhesDepois = "Sistema Hotel Comandas Eletrônicas v2.0 inicializado com dados base",
+                        IPAddress = "127.0.0.1"
+                    };
+
+                    LogsSistema.Add(logInicial);
+                    SaveChanges();
+                    Console.WriteLine(" Log inicial do sistema criado!");
+                }
+
+                // ===================================
+                //  ESTATÍSTICAS FINAIS
+                // ===================================
+                var stats = new
+                {
+                    TotalUsuarios = Usuarios.Count(),
+                    TotalProdutos = Produtos.Count(),
+                    TotalHospedes = RegistrosHospede.Count(),
+                    TotalLogs = LogsSistema.Count()
                 };
 
-                Produtos.AddRange(produtosIniciais);
-            }
+                Console.WriteLine("====================================");
+                Console.WriteLine(" DADOS INICIAIS CONFIGURADOS:");
+                Console.WriteLine($"    Usuários: {stats.TotalUsuarios}");
+                Console.WriteLine($"    Produtos: {stats.TotalProdutos}");
+                Console.WriteLine($"    Hóspedes: {stats.TotalHospedes}");
+                Console.WriteLine($"    Logs: {stats.TotalLogs}");
+                Console.WriteLine("====================================");
+                Console.WriteLine(" Sistema pronto para uso!");
+                Console.WriteLine(" Login Admin: admin / admin123");
+                Console.WriteLine(" Login Maria: mariasilva01 / 123456");
+                Console.WriteLine(" Login Ana: anacclara01 / 123456");
+                Console.WriteLine(" Código João: 18 (Garçom)");
+                Console.WriteLine("====================================");
 
-            SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($" Erro ao popular dados iniciais: {ex.Message}");
+                Console.WriteLine($" Stack: {ex.StackTrace}");
+                throw;
+            }
         }
     }
 }
