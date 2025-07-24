@@ -6,22 +6,24 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================
-// ?? CONFIGURAÇÃO BÁSICA DE LOGGING
+// ?? CONFIGURAÇÃO OTIMIZADA DE LOGGING (APENAS ARQUIVOS)
 // ===================================
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("logs/hotel-comandas-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/hotel-comandas-.txt", 
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,  // Manter apenas 30 dias
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
 // ===================================
-// ?? CONFIGURAÇÃO DO BANCO DE DADOS - SIMPLIFICADO
+// ?? CONFIGURAÇÃO DO BANCO DE DADOS OTIMIZADA
 // ===================================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Server=.\\SQLEXPRESS;Database=HotelComandasDB;Trusted_Connection=true;TrustServerCertificate=true;";
 
-// ÚNICA CONFIGURAÇÃO DO DBCONTEXT - SEM CONFLITOS
 builder.Services.AddDbContext<ComandasDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
@@ -33,14 +35,14 @@ builder.Services.AddDbContext<ComandasDbContext>(options =>
 });
 
 // ===================================
-// ?? SERVICES - CONFIGURAÇÃO ÚNICA E LIMPA
+// ?? SERVICES ESSENCIAIS
 // ===================================
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
 builder.Services.AddScoped<IRegistroHospedeService, RegistroHospedeService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
 builder.Services.AddScoped<IConsultaClienteService, ConsultaClienteService>();
-builder.Services.AddScoped<IRelatorioService, RelatorioService>();
+// builder.Services.AddScoped<IRelatorioService, RelatorioService>(); // TEMPORARIAMENTE COMENTADO
 
 // ===================================
 // ?? CONFIGURAÇÃO WEB
@@ -90,13 +92,16 @@ app.UseResponseCompression();
 app.UseRouting();
 app.UseSession();
 
-// Log simples de requests
-app.Use(async (context, next) =>
+// Log otimizado de requests (apenas em desenvolvimento)
+if (app.Environment.IsDevelopment())
 {
-    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Request: {Method} {Path}", context.Request.Method, context.Request.Path);
-    await next();
-});
+    app.Use(async (context, next) =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("?? {Method} {Path}", context.Request.Method, context.Request.Path);
+        await next();
+    });
+}
 
 // ===================================
 // ??? ROTAS
@@ -118,10 +123,10 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "registro",
     pattern: "registro/{action=Index}/{id?}",
-    defaults: new { controller = "RegistroHospede" });
+    defaults: new { controller = "Registro" }); // Era "RegistroHospede"
 
 // ===================================
-// ?? INICIALIZAÇÃO DO BANCO
+// ?? INICIALIZAÇÃO DO BANCO OTIMIZADA
 // ===================================
 using (var scope = app.Services.CreateScope())
 {
@@ -130,7 +135,7 @@ using (var scope = app.Services.CreateScope())
         var context = scope.ServiceProvider.GetRequiredService<ComandasDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-        logger.LogInformation("?? Iniciando Hotel Comandas Eletrônicas v2.0");
+        logger.LogInformation("?? Iniciando Hotel Comandas Eletrônicas v2.0 - OTIMIZADO");
 
         await context.Database.MigrateAsync();
         logger.LogInformation("?? Migrations aplicadas");
@@ -157,7 +162,7 @@ using (var scope = app.Services.CreateScope())
 // ===================================
 try
 {
-    Log.Information("?? Sistema Hotel Comandas iniciado!");
+    Log.Information("?? Sistema Hotel Comandas OTIMIZADO iniciado!");
     app.Run();
 }
 catch (Exception ex)

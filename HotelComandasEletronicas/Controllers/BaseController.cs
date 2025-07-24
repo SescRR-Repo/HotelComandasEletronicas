@@ -1,14 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using HotelComandasEletronicas.Models;
-using HotelComandasEletronicas.Services;
 
 namespace HotelComandasEletronicas.Controllers
 {
     public class BaseController : Controller
     {
-        protected ILogService? _logService;
-
         #region Propriedades de Sessão
 
         protected Usuario? UsuarioLogado
@@ -39,20 +36,16 @@ namespace HotelComandasEletronicas.Controllers
         {
             get
             {
-                // Primeiro tenta sessão completa (login)
                 var codigo = HttpContext.Session.GetString("CodigoUsuario");
                 if (!string.IsNullOrWhiteSpace(codigo))
                     return codigo;
 
-                // Depois tenta sessão temporária (validação de código)
                 return HttpContext.Session.GetString("CodigoValidado");
             }
         }
 
         public bool UsuarioEstaLogado => UsuarioLogado != null;
-
         public bool UsuarioEhSupervisor => UsuarioLogado?.IsSupervisor() ?? false;
-
         public bool UsuarioEhRecepcaoOuSupervisor
         {
             get
@@ -117,7 +110,6 @@ namespace HotelComandasEletronicas.Controllers
         {
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return RedirectToAction("Login", "Usuario", new { returnUrl });
-
             return RedirectToAction("Login", "Usuario");
         }
 
@@ -125,7 +117,6 @@ namespace HotelComandasEletronicas.Controllers
         {
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return RedirectToAction("ValidarCodigo", "Usuario", new { returnUrl });
-
             return RedirectToAction("ValidarCodigo", "Usuario");
         }
 
@@ -193,111 +184,57 @@ namespace HotelComandasEletronicas.Controllers
 
         #endregion
 
-        #region Métodos de Log e Auditoria - MELHORADOS
+        #region Métodos de Log Simplificados (APENAS SERILOG)
 
         /// <summary>
-        /// Loga ação na tabela LOGS_SISTEMA do banco de dados
+        /// Log estruturado usando apenas Serilog - OTIMIZADO
         /// </summary>
+        // Método otimizado que usa apenas Serilog
         protected void LogarAcao(string acao, string detalhes = "", string tabela = "SISTEMA", int? registroId = null)
         {
-            // Executar de forma assíncrona sem bloquear
-            _ = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    // Obter LogService se não foi injetado ainda
-                    _logService ??= HttpContext.RequestServices.GetService<ILogService>();
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
 
-                    if (_logService == null) return;
-
-                    var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
-                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-
-                    // Gravar no banco através do LogService
-                    await _logService.RegistrarLogAsync(
-                        codigoUsuario: usuario,
-                        acao: acao,
-                        tabela: tabela,
-                        registroId: registroId,
-                        detalhesAntes: null,
-                        detalhesDepois: detalhes
-                    );
-
-                    // Também manter o log no Serilog para desenvolvimento
-                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
-                    logger?.LogInformation("Usuário {Usuario} executou ação: {Acao}. Detalhes: {Detalhes}. IP: {IP}",
-                        usuario, acao, detalhes, ip);
-                }
-                catch (Exception ex)
-                {
-                    // Se falhar o log personalizado, pelo menos logar o erro
-                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
-                    logger?.LogError(ex, "Erro ao registrar log personalizado para ação: {Acao}", acao);
-                }
-            });
+                // LOG ESTRUTURADO COMPLETO EM ARQUIVO
+                logger?.LogInformation("🎯 AÇÃO: {Acao} | 👤 Usuário: {Usuario} | 📋 Tabela: {Tabela} | 🆔 ID: {RegistroId} | 📝 Detalhes: {Detalhes} | 🌐 IP: {IP}",
+                    acao, usuario, tabela, registroId, detalhes, ip);
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                logger?.LogError(ex, "❌ Erro ao registrar log para ação: {Acao}", acao);
+            }
         }
 
         /// <summary>
-        /// Loga ação de login específica
+        /// Log específico para login/logout
         /// </summary>
         protected void LogarLogin(string usuario, bool sucesso, string detalhes = "")
         {
-            _ = Task.Run(async () =>
+            try
             {
-                try
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                
+                if (sucesso)
                 {
-                    _logService ??= HttpContext.RequestServices.GetService<ILogService>();
-
-                    if (_logService != null)
-                    {
-                        await _logService.RegistrarLoginAsync(usuario, sucesso, detalhes);
-                    }
+                    logger?.LogInformation("✅ LOGIN SUCESSO: {Usuario} | 🌐 IP: {IP} | 📝 Detalhes: {Detalhes}", 
+                        usuario, ip, detalhes);
                 }
-                catch (Exception ex)
+                else
                 {
-                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
-                    logger?.LogError(ex, "Erro ao registrar log de login");
+                    logger?.LogWarning("❌ LOGIN FALHOU: {Usuario} | 🌐 IP: {IP} | 📝 Detalhes: {Detalhes}", 
+                        usuario, ip, detalhes);
                 }
-            });
-        }
-
-        /// <summary>
-        /// Loga alteração em registro específico (para auditoria completa)
-        /// </summary>
-        protected void LogarAlteracao(string acao, string tabela, int registroId,
-            object? estadoAnterior = null, object? estadoPosterior = null)
-        {
-            _ = Task.Run(async () =>
+            }
+            catch (Exception ex)
             {
-                try
-                {
-                    _logService ??= HttpContext.RequestServices.GetService<ILogService>();
-
-                    if (_logService == null) return;
-
-                    var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
-
-                    var detalhesAntes = estadoAnterior != null ?
-                        _logService.FormatarDetalhesJson(estadoAnterior) : null;
-
-                    var detalhesDepois = estadoPosterior != null ?
-                        _logService.FormatarDetalhesJson(estadoPosterior) : null;
-
-                    await _logService.RegistrarLogAsync(
-                        codigoUsuario: usuario,
-                        acao: acao,
-                        tabela: tabela,
-                        registroId: registroId,
-                        detalhesAntes: detalhesAntes,
-                        detalhesDepois: detalhesDepois
-                    );
-                }
-                catch (Exception ex)
-                {
-                    var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
-                    logger?.LogError(ex, "Erro ao registrar log de alteração");
-                }
-            });
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                logger?.LogError(ex, "❌ Erro ao registrar log de login");
+            }
         }
 
         #endregion
@@ -306,10 +243,7 @@ namespace HotelComandasEletronicas.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            // Obter o LogService para usar nos métodos de log
-            _logService = HttpContext.RequestServices.GetService<ILogService>();
-
-            // Passar dados do usuário para todas as views
+            // Passar dados do usuário para views
             ViewBag.UsuarioLogado = UsuarioLogado;
             ViewBag.CodigoUsuarioAtual = CodigoUsuarioAtual;
             ViewBag.UsuarioEstaLogado = UsuarioEstaLogado;
@@ -319,39 +253,10 @@ namespace HotelComandasEletronicas.Controllers
             base.OnActionExecuting(context);
         }
 
-        public override void OnActionExecuted(ActionExecutedContext context)
-        {
-            // Log automático de todas as ações (opcional)
-            var actionName = context.ActionDescriptor.DisplayName ?? "Unknown";
-            var controllerName = context.Controller.GetType().Name;
-
-            // Só loga ações importantes, não todas
-            if (ShouldLogAction(actionName))
-            {
-                LogarAcao($"Acao{controllerName}", $"Executou: {actionName}");
-            }
-
-            base.OnActionExecuted(context);
-        }
-
-        /// <summary>
-        /// Define quais ações devem ser logadas automaticamente
-        /// </summary>
-        private bool ShouldLogAction(string actionName)
-        {
-            var actionsToLog = new[]
-            {
-                "Login", "Logout", "Cadastrar", "Editar", "Inativar", "Ativar",
-                "Cancelar", "Finalizar", "Registrar", "Alterar"
-            };
-
-            return actionsToLog.Any(action => actionName.Contains(action, StringComparison.OrdinalIgnoreCase));
-        }
-
         #endregion
     }
 
-    #region Attributes de Autorização (mantidos iguais)
+    #region Attributes de Autorização
 
     public class RequireLoginAttribute : ActionFilterAttribute
     {
