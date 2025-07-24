@@ -1,6 +1,6 @@
-@model HotelComandasEletronicas.ViewModels.LancamentoViewModel
+@model HotelComandasEletronicas.ViewModels.ComandaLancamentoViewModel
 @{
-    ViewData["Title"] = "Lançamento de Consumo - Sistema de Comandas";
+    ViewData["Title"] = "Comanda Eletrônica - Sistema de Comandas";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -8,421 +8,722 @@
     <div class="col-12">
         <div class="perfil-header perfil-garcom mb-4">
             <h2 class="mb-2">
-                <i class="fas fa-plus-circle me-3"></i>
-                Lançamento de Consumo
+                <i class="fas fa-clipboard-list me-3"></i>
+                Comanda Eletrônica
             </h2>
-            <p class="mb-0 fs-5">Registrar consumo de hóspede</p>
-            <small>Usuário: <strong>@ViewBag.UsuarioLancamento</strong></small>
+            <p class="mb-0 fs-5">Sistema de Pré-Lançamentos e Gestão de Pedidos</p>
+            <small class="text-muted">Acesso livre - Código do garçom solicitado apenas na confirmação</small>
         </div>
     </div>
 </div>
 
-<!-- Card Principal de Lançamento -->
-<div class="row justify-content-center mb-4">
-    <div class="col-lg-8">
-        <div class="card shadow-lg">
-            <div class="card-header bg-success text-white">
+<div class="row">
+    <!-- COLUNA 1: BUSCAR CLIENTE -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
-                    <i class="fas fa-shopping-cart me-2"></i>
-                    Novo Lançamento
+                    <i class="fas fa-search me-2"></i>
+                    Buscar Cliente
                 </h5>
             </div>
-
             <div class="card-body">
-                <!-- Alertas de erro -->
-                @if (!ViewData.ModelState.IsValid)
-                {
-                    <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Corrija os erros abaixo:</strong>
-                        <ul class="mb-0 mt-2">
-                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                            {
-                                <li>@error.ErrorMessage</li>
-                            }
-                        </ul>
+                <!-- Campo de busca inteligente -->
+                <div class="mb-3">
+                    <label class="form-label">Cliente / Quarto</label>
+                    <input type="text" id="buscaCliente" class="form-control form-control-lg" 
+                           placeholder="Maria Silva, 101, (95) 99999..." 
+                           onkeyup="buscarClientes()" />
+                    <div class="form-text">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        <strong>Busca Inteligente:</strong><br>
+                        • <strong>Só números:</strong> Busca por quarto<br>
+                        • <strong>Letras:</strong> Busca por nome<br>
+                        • <strong>Formato telefone:</strong> Busca por telefone
                     </div>
-                }
+                </div>
 
-                <!-- Formulário de Lançamento -->
-                <form asp-action="Lancar" method="post" class="needs-validation" novalidate>
-                    @Html.AntiForgeryToken()
+                <!-- Resultados da busca -->
+                <div id="resultadosClientes" class="mb-3" style="display: none;">
+                    <label class="form-label">Resultados:</label>
+                    <div id="listaClientes" class="list-group"></div>
+                </div>
 
-                    <div class="row">
-                        <!-- Seleção de Hóspede -->
-                        <div class="col-lg-6 mb-3">
-                            <label asp-for="RegistroHospedeID" class="form-label">
-                                <i class="fas fa-bed me-2"></i>
-                                Hóspede / Quarto *
-                            </label>
-                            <select asp-for="RegistroHospedeID" class="form-select" id="selectHospede" required>
-                                <option value="">Selecione o hóspede</option>
-                                @if (ViewBag.HospedesAtivos != null)
-                                {
-                                    @foreach (var hospede in ViewBag.HospedesAtivos as List<HotelComandasEletronicas.Models.RegistroHospede>)
-                                    {
-                                        <option value="@hospede.ID" data-quarto="@hospede.NumeroQuarto" data-nome="@hospede.NomeCliente" data-telefone="@hospede.TelefoneCliente">
-                                            Quarto @hospede.NumeroQuarto - @hospede.NomeCliente
-                                        </option>
-                                    }
-                                }
-                            </select>
-                            <span asp-validation-for="RegistroHospedeID" class="text-danger small"></span>
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Escolha o quarto e hóspede para o lançamento
-                            </div>
-                        </div>
-
-                        <!-- Seleção de Categoria -->
-                        <div class="col-lg-6 mb-3">
-                            <label for="selectCategoria" class="form-label">
-                                <i class="fas fa-list me-2"></i>
-                                Categoria do Produto
-                            </label>
-                            <select id="selectCategoria" class="form-select" onchange="carregarProdutosPorCategoria()">
-                                <option value="">Selecione a categoria</option>
-                                @if (ViewBag.ProdutosPorCategoria != null)
-                                {
-                                    @foreach (var categoria in (ViewBag.ProdutosPorCategoria as Dictionary<string, List<HotelComandasEletronicas.Models.Produto>>).Keys)
-                                    {
-                                        <option value="@categoria">@categoria</option>
-                                    }
-                                }
-                            </select>
-                            <div class="form-text">
-                                <i class="fas fa-filter me-1"></i>
-                                Filtre produtos por categoria
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <!-- Seleção de Produto -->
-                        <div class="col-lg-8 mb-3">
-                            <label asp-for="ProdutoID" class="form-label">
-                                <i class="fas fa-box me-2"></i>
-                                Produto *
-                            </label>
-                            <select asp-for="ProdutoID" class="form-select" id="selectProduto" onchange="atualizarValorProduto()" required>
-                                <option value="">Primeiro selecione uma categoria</option>
-                            </select>
-                            <span asp-validation-for="ProdutoID" class="text-danger small"></span>
-                            <div class="form-text" id="infoProduto">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Selecione o produto desejado
-                            </div>
-                        </div>
-
-                        <!-- Quantidade -->
-                        <div class="col-lg-4 mb-3">
-                            <label asp-for="Quantidade" class="form-label">
-                                <i class="fas fa-calculator me-2"></i>
-                                Quantidade *
-                            </label>
-                            <div class="input-group">
-                                <button type="button" class="btn btn-outline-secondary" onclick="diminuirQuantidade()">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <input asp-for="Quantidade" type="number" class="form-control text-center fs-5 fw-bold" 
-                                       step="0.01" min="0.01" max="999.99" value="1"
-                                       onchange="calcularTotal()" oninput="calcularTotal()" required />
-                                <button type="button" class="btn btn-outline-secondary" onclick="aumentarQuantidade()">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                            <span asp-validation-for="Quantidade" class="text-danger small"></span>
-                        </div>
-                    </div>
-
-                    <!-- Observações -->
-                    <div class="row">
-                        <div class="col-12 mb-3">
-                            <label asp-for="Observacoes" class="form-label">
-                                <i class="fas fa-comment me-2"></i>
-                                Observações (opcional)
-                            </label>
-                            <textarea asp-for="Observacoes" class="form-control" rows="2" 
-                                      placeholder="Ex: Sem gelo, quente, bem passado, etc."></textarea>
-                            <span asp-validation-for="Observacoes" class="text-danger small"></span>
-                        </div>
-                    </div>
-
-                    <!-- Resumo do Lançamento -->
-                    <div class="card border-info mb-3" id="resumoLancamento" style="display: none;">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-receipt me-2"></i>
-                                Resumo do Lançamento
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Hóspede:</strong> <span id="resumoHospede">-</span><br>
-                                    <strong>Produto:</strong> <span id="resumoProduto">-</span>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <strong>Quantidade:</strong> <span id="resumoQuantidade">-</span><br>
-                                    <strong>Valor Total:</strong> <span id="resumoTotal" class="fs-4 text-success fw-bold">R$ 0,00</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Botões de Ação -->
-                    <div class="row">
-                        <div class="col-lg-6 mb-2">
-                            <button type="submit" class="btn btn-success w-100 btn-lg" id="btnLancar" disabled>
-                                <i class="fas fa-check me-2"></i>
-                                Confirmar Lançamento
-                            </button>
-                        </div>
-                        <div class="col-lg-3 mb-2">
-                            <button type="reset" class="btn btn-outline-secondary w-100" onclick="limparFormulario()">
-                                <i class="fas fa-eraser me-2"></i>
-                                Limpar
-                            </button>
-                        </div>
-                        <div class="col-lg-3 mb-2">
-                            <a href="/lancamento/historico" class="btn btn-outline-info w-100">
-                                <i class="fas fa-history me-2"></i>
-                                Histórico
-                            </a>
-                        </div>
-                    </div>
-                </form>
+                <!-- Cliente selecionado -->
+                <div id="clienteSelecionado" class="alert alert-success" style="display: none;">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Cliente da Comanda
+                    </h6>
+                    <strong id="nomeClienteSelecionado">-</strong><br>
+                    <small>
+                        Quarto: <span id="quartoClienteSelecionado">-</span><br>
+                        Tel: <span id="telefoneClienteSelecionado">-</span><br>
+                        Gasto atual: <span id="gastoClienteSelecionado">-</span>
+                    </small>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="limparCliente()">
+                        <i class="fas fa-times me-1"></i>Trocar Cliente
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm mt-2" onclick="verExtratoCompleto()">
+                        <i class="fas fa-receipt me-1"></i>Ver Extrato Completo
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Cards de Produtos por Categoria (Seleção Rápida) -->
-<div class="row">
-    <div class="col-12">
-        <h4 class="mb-3">
-            <i class="fas fa-bolt me-2"></i>
-            Seleção Rápida de Produtos
-        </h4>
-    </div>
+    <!-- COLUNA 2: SELECIONAR PRODUTOS -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-utensils me-2"></i>
+                    Cardápio e Serviços
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Abas de categorias -->
+                <ul class="nav nav-pills nav-fill mb-3" id="categoriaTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="bebidas-tab" data-bs-toggle="pill" 
+                                data-bs-target="#bebidas" type="button" onclick="carregarProdutos('Bebidas')">
+                            <i class="fas fa-glass-whiskey me-1"></i> Bebidas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="comidas-tab" data-bs-toggle="pill" 
+                                data-bs-target="#comidas" type="button" onclick="carregarProdutos('Comidas')">
+                            <i class="fas fa-utensils me-1"></i> Comidas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="servicos-tab" data-bs-toggle="pill" 
+                                data-bs-target="#servicos" type="button" onclick="carregarProdutos('Serviços')">
+                            <i class="fas fa-concierge-bell me-1"></i> Serviços
+                        </button>
+                    </li>
+                </ul>
 
-    @if (ViewBag.ProdutosPorCategoria != null)
-    {
-        @foreach (var categoria in (ViewBag.ProdutosPorCategoria as Dictionary<string, List<HotelComandasEletronicas.Models.Produto>>))
-        {
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header @(categoria.Key == "Bebidas" ? "bg-info" : categoria.Key == "Comidas" ? "bg-warning text-dark" : "bg-success") text-white">
-                        <h6 class="mb-0">
-                            <i class="@(categoria.Key == "Bebidas" ? "fas fa-glass-whiskey" : categoria.Key == "Comidas" ? "fas fa-utensils" : "fas fa-concierge-bell") me-2"></i>
-                            @categoria.Key
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-2">
-                            @foreach (var produto in categoria.Value.Take(6))
-                            {
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-start produto-rapido"
-                                            data-produto-id="@produto.ID"
-                                            data-produto-nome="@produto.Descricao"
-                                            data-produto-valor="@produto.Valor"
-                                            data-categoria="@categoria.Key"
-                                            onclick="selecionarProdutoRapido(this)">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <small class="text-truncate">@produto.Descricao</small>
-                                            <small class="text-success fw-bold">@produto.FormatarValor()</small>
-                                        </div>
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                        @if (categoria.Value.Count > 6)
-                        {
-                            <div class="text-center mt-2">
-                                <small class="text-muted">+@(categoria.Value.Count - 6) produtos</small>
-                            </div>
-                        }
+                <!-- Busca de produtos -->
+                <div class="mb-3">
+                    <input type="text" id="buscaProduto" class="form-control" 
+                           placeholder="Buscar no cardápio..." 
+                           onkeyup="buscarProdutos()" />
+                </div>
+
+                <!-- Lista de produtos -->
+                <div class="tab-content" id="produtosContent">
+                    <div id="listaProdutos" class="row g-2" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Produtos serão carregados aqui -->
                     </div>
                 </div>
             </div>
-        }
-    }
+        </div>
+    </div>
+
+    <!-- COLUNA 3: PRÉ-LANÇAMENTOS DA COMANDA -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    Pré-Lançamentos da Comanda
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Contador de itens -->
+                <div class="alert alert-info text-center mb-3">
+                    <h6 class="mb-1">
+                        <span id="contadorPedidos">0</span> Pedidos na Comanda
+                    </h6>
+                    <small>Total: <strong id="totalComanda">R$ 0,00</strong></small>
+                </div>
+
+                <!-- Lista de pré-lançamentos -->
+                <div id="itensComanda" style="max-height: 300px; overflow-y: auto;">
+                    <div id="comandaVazia" class="text-center text-muted py-4">
+                        <i class="fas fa-clipboard fa-3x mb-3 opacity-50"></i>
+                        <p>Comanda vazia</p>
+                        <small>Adicione pedidos do cardápio</small>
+                    </div>
+                </div>
+
+                <!-- Observações da comanda -->
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-comment me-2"></i>
+                        Observações da comanda:
+                    </label>
+                    <textarea id="observacoesComanda" class="form-control" rows="2" 
+                              placeholder="Ex: Cliente solicitou sem gelo, mesa preferencial..."></textarea>
+                </div>
+
+                <!-- Resumo da comanda -->
+                <div id="resumoComanda" class="card border-primary mb-3" style="display: none;">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">Resumo da Comanda</h6>
+                    </div>
+                    <div class="card-body">
+                        <small>
+                            <strong>Cliente:</strong> <span id="resumoCliente">-</span><br>
+                            <strong>Pedidos:</strong> <span id="resumoPedidos">-</span><br>
+                            <strong>Total:</strong> <span id="resumoTotal" class="text-success fw-bold">-</span><br>
+                            <strong>Garçom:</strong> <span class="text-warning">A confirmar</span>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Botões de ação -->
+                <div class="d-grid gap-2">
+                    <button type="button" id="btnEfetivarComanda" class="btn btn-success btn-lg" 
+                            onclick="abrirModalConfirmacao()" disabled>
+                        <i class="fas fa-check me-2"></i>
+                        EFETIVAR COMANDA
+                    </button>
+                    <div class="row">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="limparComanda()">
+                                <i class="fas fa-eraser me-1"></i>Limpar Comanda
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <a href="/" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-home me-1"></i>Voltar Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMAÇÃO COM CÓDIGO DO GARÇOM -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-check me-2"></i>
+                    Confirmação da Comanda
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Última etapa:</strong> Digite seu código de garçom para efetivar a comanda.
+                </div>
+
+                <!-- Resumo final -->
+                <div class="card border-info mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Resumo da Comanda</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Cliente:</strong> <span id="modalResumoCliente">-</span><br>
+                                <strong>Quarto:</strong> <span id="modalResumoQuarto">-</span><br>
+                                <strong>Total de Pedidos:</strong> <span id="modalResumoPedidos">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Valor Total:</strong> <span id="modalResumoTotal" class="fs-4 text-success fw-bold">-</span><br>
+                                <strong>Data/Hora:</strong> <span id="modalDataHora">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Código do garçom -->
+                <div class="mb-3">
+                    <label for="codigoGarcom" class="form-label">
+                        <i class="fas fa-user-tie me-2"></i>
+                        Código do Garçom (2 dígitos) *
+                    </label>
+                    <input type="text" id="codigoGarcom" class="form-control form-control-lg text-center fs-3 fw-bold" 
+                           placeholder="00" maxlength="2" pattern="[0-9]{2}" 
+                           style="letter-spacing: 0.5em;" required 
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                           onkeyup="validarCodigoGarcom()" />
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Digite seu código pessoal de garçom. Ex: 18, 03, 15, etc.
+                    </div>
+                </div>
+
+                <!-- Detalhes dos pedidos -->
+                <div class="card border-secondary">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0">Detalhes dos Pedidos</h6>
+                    </div>
+                    <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                        <div id="modalDetalhesPedidos">
+                            <!-- Pedidos serão listados aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" id="btnProcessarComanda" class="btn btn-success" 
+                        onclick="processarComanda()" disabled>
+                    <i class="fas fa-check me-1"></i>
+                    Confirmar e Efetivar
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
         // Variáveis globais
-        let valorUnitarioAtual = 0;
+        let clienteAtual = null;
+        let itensComanda = [];
+        let produtosTodos = @Html.Raw(Json.Serialize(ViewBag.ProdutosTodos ?? new List<object>()));
 
-        // Carregar produtos por categoria
-        function carregarProdutosPorCategoria() {
-            const categoria = document.getElementById('selectCategoria').value;
-            const selectProduto = document.getElementById('selectProduto');
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Produtos carregados:', produtosTodos.length);
+            carregarProdutos('Bebidas');
+        });
 
-            if (!categoria) {
-                selectProduto.innerHTML = '<option value="">Primeiro selecione uma categoria</option>';
+        // FUNÇÕES DE BUSCA DE CLIENTES
+        function buscarClientes() {
+            const termo = document.getElementById('buscaCliente').value.trim();
+            
+            if (termo.length < 2) {
+                document.getElementById('resultadosClientes').style.display = 'none';
                 return;
             }
 
-            fetch(`/lancamento/buscarprodutosporcategoria?categoria=${encodeURIComponent(categoria)}`)
+            fetch(`/lancamento/buscarhospedes?termo=${encodeURIComponent(termo)}`)
                 .then(response => response.json())
                 .then(data => {
-                    selectProduto.innerHTML = '<option value="">Selecione o produto</option>';
-                    data.forEach(produto => {
-                        const option = document.createElement('option');
-                        option.value = produto.id;
-                        option.textContent = `${produto.descricao} - ${produto.valorFormatado}`;
-                        option.setAttribute('data-valor', produto.valor);
-                        option.setAttribute('data-descricao', produto.descricao);
-                        selectProduto.appendChild(option);
-                    });
+                    const listaDiv = document.getElementById('listaClientes');
+                    listaDiv.innerHTML = '';
+
+                    if (data.length === 0) {
+                        listaDiv.innerHTML = '<div class="alert alert-warning">Nenhum cliente encontrado</div>';
+                    } else {
+                        data.forEach(cliente => {
+                            const item = document.createElement('button');
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">${cliente.nomeCliente}</h6>
+                                        <small>Quarto ${cliente.numeroQuarto} | ${cliente.telefone}</small>
+                                    </div>
+                                    <span class="badge bg-primary">${cliente.valorGastoFormatado}</span>
+                                </div>
+                            `;
+                            item.onclick = () => selecionarCliente(cliente);
+                            listaDiv.appendChild(item);
+                        });
+                    }
+
+                    document.getElementById('resultadosClientes').style.display = 'block';
                 })
                 .catch(error => {
-                    console.error('Erro ao carregar produtos:', error);
-                    selectProduto.innerHTML = '<option value="">Erro ao carregar produtos</option>';
+                    console.error('Erro ao buscar clientes:', error);
                 });
         }
 
-        // Atualizar valor do produto selecionado
-        function atualizarValorProduto() {
-            const selectProduto = document.getElementById('selectProduto');
-            const option = selectProduto.selectedOptions[0];
+        function selecionarCliente(cliente) {
+            clienteAtual = cliente;
+            
+            document.getElementById('nomeClienteSelecionado').textContent = cliente.nomeCliente;
+            document.getElementById('quartoClienteSelecionado').textContent = cliente.numeroQuarto;
+            document.getElementById('telefoneClienteSelecionado').textContent = cliente.telefone;
+            document.getElementById('gastoClienteSelecionado').textContent = cliente.valorGastoFormatado;
+            
+            document.getElementById('resultadosClientes').style.display = 'none';
+            document.getElementById('clienteSelecionado').style.display = 'block';
+            document.getElementById('buscaCliente').value = cliente.nomeCliente;
+            
+            atualizarResumo();
+        }
 
-            if (option && option.value) {
-                valorUnitarioAtual = parseFloat(option.getAttribute('data-valor'));
-                const descricao = option.getAttribute('data-descricao');
+        function limparCliente() {
+            clienteAtual = null;
+            document.getElementById('clienteSelecionado').style.display = 'none';
+            document.getElementById('buscaCliente').value = '';
+            atualizarResumo();
+        }
 
-                document.getElementById('infoProduto').innerHTML = 
-                    `<i class="fas fa-info-circle me-1"></i>Valor unitário: <strong class="text-success">${valorUnitarioAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>`;
+        // FUNÇÕES DE PRODUTOS
+        function carregarProdutos(categoria) {
+            const produtos = produtosTodos.filter(p => p.categoria === categoria);
+            const listaDiv = document.getElementById('listaProdutos');
+            
+            listaDiv.innerHTML = '';
+            
+            if (produtos.length === 0) {
+                listaDiv.innerHTML = '<div class="alert alert-warning">Nenhum produto encontrado nesta categoria</div>';
+                return;
+            }
+            
+            produtos.forEach(produto => {
+                const produtoDiv = document.createElement('div');
+                produtoDiv.className = 'col-12 mb-2';
+                produtoDiv.innerHTML = `
+                    <div class="card border-${categoria === 'Bebidas' ? 'info' : categoria === 'Comidas' ? 'warning' : 'success'}">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="fw-bold">${produto.descricao}</small><br>
+                                    <span class="text-success fw-bold">${produto.valorFormatado}</span>
+                                </div>
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="adicionarPedido(${produto.id}, '${produto.descricao.replace(/'/g, "\\'")}', '${produto.categoria}', ${produto.valor}, '${produto.valorFormatado}')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listaDiv.appendChild(produtoDiv);
+            });
+        }
 
-                calcularTotal();
+        function buscarProdutos() {
+            const termo = document.getElementById('buscaProduto').value.trim().toLowerCase();
+            
+            if (termo.length === 0) {
+                // Recarregar categoria ativa
+                const tabAtiva = document.querySelector('.nav-link.active').textContent.trim();
+                const categoria = tabAtiva.includes('Bebidas') ? 'Bebidas' : 
+                                tabAtiva.includes('Comidas') ? 'Comidas' : 'Serviços';
+                carregarProdutos(categoria);
+                return;
+            }
+
+            const produtosFiltrados = produtosTodos.filter(p => 
+                p.descricao.toLowerCase().includes(termo) || 
+                p.categoria.toLowerCase().includes(termo)
+            );
+
+            const listaDiv = document.getElementById('listaProdutos');
+            listaDiv.innerHTML = '';
+
+            if (produtosFiltrados.length === 0) {
+                listaDiv.innerHTML = '<div class="alert alert-warning">Nenhum produto encontrado no cardápio</div>';
+                return;
+            }
+
+            produtosFiltrados.forEach(produto => {
+                const produtoDiv = document.createElement('div');
+                produtoDiv.className = 'col-12 mb-2';
+                produtoDiv.innerHTML = `
+                    <div class="card border-secondary">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="fw-bold">${produto.descricao}</small><br>
+                                    <span class="badge bg-secondary">${produto.categoria}</span>
+                                    <span class="text-success fw-bold ms-2">${produto.valorFormatado}</span>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" onclick="adicionarPedido(${produto.id}, '${produto.descricao.replace(/'/g, "\\'")}', '${produto.categoria}', ${produto.valor}, '${produto.valorFormatado}')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listaDiv.appendChild(produtoDiv);
+            });
+        }
+
+        // FUNÇÕES DA COMANDA
+        function adicionarPedido(id, descricao, categoria, valor, valorFormatado) {
+            // Verificar se item já existe na comanda
+            const itemExistente = itensComanda.find(item => item.id === id);
+            
+            if (itemExistente) {
+                itemExistente.quantidade += 1;
             } else {
-                valorUnitarioAtual = 0;
-                document.getElementById('infoProduto').innerHTML = 
-                    '<i class="fas fa-info-circle me-1"></i>Selecione o produto desejado';
+                itensComanda.push({
+                    id: id,
+                    descricao: descricao,
+                    categoria: categoria,
+                    valor: valor,
+                    valorFormatado: valorFormatado,
+                    quantidade: 1
+                });
+            }
+            
+            atualizarComanda();
+            atualizarResumo();
+        }
+
+        function removerPedido(id) {
+            itensComanda = itensComanda.filter(item => item.id !== id);
+            atualizarComanda();
+            atualizarResumo();
+        }
+
+        function alterarQuantidade(id, novaQuantidade) {
+            const item = itensComanda.find(item => item.id === id);
+            if (item) {
+                if (novaQuantidade <= 0) {
+                    removerPedido(id);
+                } else {
+                    item.quantidade = parseFloat(novaQuantidade);
+                    atualizarComanda();
+                    atualizarResumo();
+                }
             }
         }
 
-        // Calcular total do lançamento
-        function calcularTotal() {
-            const quantidade = parseFloat(document.querySelector('input[name="Quantidade"]').value) || 0;
-            const total = valorUnitarioAtual * quantidade;
-
-            // Atualizar resumo
-            atualizarResumo();
-
-            // Habilitar/desabilitar botão de lançamento
-            const btnLancar = document.getElementById('btnLancar');
-            const hospedeSelecionado = document.getElementById('selectHospede').value;
-            const produtoSelecionado = document.getElementById('selectProduto').value;
-
-            btnLancar.disabled = !(hospedeSelecionado && produtoSelecionado && quantidade > 0 && valorUnitarioAtual > 0);
+        function atualizarComanda() {
+            const comandaDiv = document.getElementById('itensComanda');
+            
+            if (itensComanda.length === 0) {
+                // Mostrar estado vazio
+                comandaDiv.innerHTML = `
+                    <div id="comandaVazia" class="text-center text-muted py-4">
+                        <i class="fas fa-clipboard fa-3x mb-3 opacity-50"></i>
+                        <p>Comanda vazia</p>
+                        <small>Adicione pedidos do cardápio</small>
+                    </div>
+                `;
+                document.getElementById('contadorPedidos').textContent = '0';
+                document.getElementById('totalComanda').textContent = 'R$ 0,00';
+                document.getElementById('btnEfetivarComanda').disabled = true;
+                return;
+            }
+            
+            const totalPedidos = itensComanda.length;
+            const totalValor = itensComanda.reduce((total, item) => total + (item.valor * item.quantidade), 0);
+            
+            document.getElementById('contadorPedidos').textContent = totalPedidos;
+            document.getElementById('totalComanda').textContent = totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            // Reconstruir lista de pedidos
+            let html = '';
+            itensComanda.forEach(item => {
+                const subtotal = item.valor * item.quantidade;
+                html += `
+                    <div class="card mb-2 border-light">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <small class="fw-bold">${item.descricao}</small><br>
+                                    <span class="badge bg-light text-dark">${item.categoria}</span>
+                                    <small class="text-muted ms-2">${item.valorFormatado} cada</small>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerPedido(${item.id})" title="Remover pedido">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2">
+                                <div class="input-group input-group-sm">
+                                    <button class="btn btn-outline-secondary" onclick="alterarQuantidade(${item.id}, ${item.quantidade - 1})">-</button>
+                                    <input type="number" class="form-control text-center" value="${item.quantidade}" 
+                                           onchange="alterarQuantidade(${item.id}, parseFloat(this.value))" min="0.01" step="0.01">
+                                    <button class="btn btn-outline-secondary" onclick="alterarQuantidade(${item.id}, ${item.quantidade + 1})">+</button>
+                                    <span class="input-group-text text-success fw-bold">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            comandaDiv.innerHTML = html;
+            
+            // Habilitar botão se tiver cliente e pedidos
+            document.getElementById('btnEfetivarComanda').disabled = !(clienteAtual && itensComanda.length > 0);
         }
 
-        // Atualizar resumo do lançamento
         function atualizarResumo() {
-            const hospedeSelect = document.getElementById('selectHospede');
-            const produtoSelect = document.getElementById('selectProduto');
-            const quantidade = parseFloat(document.querySelector('input[name="Quantidade"]').value) || 0;
-            const total = valorUnitarioAtual * quantidade;
-
-            const resumoDiv = document.getElementById('resumoLancamento');
-
-            if (hospedeSelect.value && produtoSelect.value && quantidade > 0) {
-                const hospedeOption = hospedeSelect.selectedOptions[0];
-                const produtoOption = produtoSelect.selectedOptions[0];
-
-                document.getElementById('resumoHospede').textContent = hospedeOption.textContent;
-                document.getElementById('resumoProduto').textContent = produtoOption.getAttribute('data-descricao');
-                document.getElementById('resumoQuantidade').textContent = quantidade;
-                document.getElementById('resumoTotal').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
+            const resumoDiv = document.getElementById('resumoComanda');
+            
+            if (clienteAtual && itensComanda.length > 0) {
+                const totalPedidos = itensComanda.length;
+                const totalValor = itensComanda.reduce((total, item) => total + (item.valor * item.quantidade), 0);
+                
+                document.getElementById('resumoCliente').textContent = `${clienteAtual.nomeCliente} (Quarto ${clienteAtual.numeroQuarto})`;
+                document.getElementById('resumoPedidos').textContent = `${totalPedidos} pedido(s)`;
+                document.getElementById('resumoTotal').textContent = totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
                 resumoDiv.style.display = 'block';
             } else {
                 resumoDiv.style.display = 'none';
             }
         }
 
-        // Aumentar quantidade
-        function aumentarQuantidade() {
-            const input = document.querySelector('input[name="Quantidade"]');
-            const valor = parseFloat(input.value) || 0;
-            input.value = (valor + 1).toFixed(2);
-            calcularTotal();
+        // FUNÇÕES DE CONFIRMAÇÃO
+        function abrirModalConfirmacao() {
+            if (!clienteAtual) {
+                alert('Selecione um cliente primeiro!');
+                return;
+            }
+            
+            if (itensComanda.length === 0) {
+                alert('Adicione pedidos à comanda!');
+                return;
+            }
+            
+            // Preencher dados do modal
+            const totalPedidos = itensComanda.length;
+            const totalQuantidade = itensComanda.reduce((total, item) => total + item.quantidade, 0);
+            const totalValor = itensComanda.reduce((total, item) => total + (item.valor * item.quantidade), 0);
+            
+            document.getElementById('modalResumoCliente').textContent = clienteAtual.nomeCliente;
+            document.getElementById('modalResumoQuarto').textContent = clienteAtual.numeroQuarto;
+            document.getElementById('modalResumoPedidos').textContent = `${totalPedidos} pedido(s) (${totalQuantidade} unidades)`;
+            document.getElementById('modalResumoTotal').textContent = totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('modalDataHora').textContent = new Date().toLocaleString('pt-BR');
+            
+            // Listar pedidos detalhados
+            let htmlPedidos = '';
+            itensComanda.forEach(item => {
+                const subtotal = item.valor * item.quantidade;
+                htmlPedidos += `
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>${item.quantidade}x ${item.descricao}</span>
+                        <strong>${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                    </div>
+                `;
+            });
+            document.getElementById('modalDetalhesPedidos').innerHTML = htmlPedidos;
+            
+            // Limpar código
+            document.getElementById('codigoGarcom').value = '';
+            document.getElementById('btnProcessarComanda').disabled = true;
+            
+            // Abrir modal
+            new bootstrap.Modal(document.getElementById('modalConfirmacao')).show();
+            
+            // Focar no campo de código
+            setTimeout(() => {
+                document.getElementById('codigoGarcom').focus();
+            }, 500);
         }
 
-        // Diminuir quantidade
-        function diminuirQuantidade() {
-            const input = document.querySelector('input[name="Quantidade"]');
-            const valor = parseFloat(input.value) || 0;
-            if (valor > 0.01) {
-                input.value = (valor - 1).toFixed(2);
-                calcularTotal();
+        function validarCodigoGarcom() {
+            const codigo = document.getElementById('codigoGarcom').value;
+            const btnProcessar = document.getElementById('btnProcessarComanda');
+            
+            if (codigo.length === 2 && /^\d{2}$/.test(codigo)) {
+                btnProcessar.disabled = false;
+            } else {
+                btnProcessar.disabled = true;
             }
         }
 
-        // Seleção rápida de produto
-        function selecionarProdutoRapido(button) {
-            const produtoId = button.getAttribute('data-produto-id');
-            const produtoNome = button.getAttribute('data-produto-nome');
-            const produtoValor = button.getAttribute('data-produto-valor');
-            const categoria = button.getAttribute('data-categoria');
-
-            // Selecionar categoria
-            document.getElementById('selectCategoria').value = categoria;
-            carregarProdutosPorCategoria();
-
-            // Aguardar o carregamento dos produtos e selecionar
-            setTimeout(() => {
-                document.getElementById('selectProduto').value = produtoId;
-                atualizarValorProduto();
-            }, 300);
+        function processarComanda() {
+            const codigo = document.getElementById('codigoGarcom').value;
+            const observacoes = document.getElementById('observacoesComanda').value;
+            
+            if (!codigo || codigo.length !== 2) {
+                alert('Digite um código válido de garçom (2 dígitos)!');
+                return;
+            }
+            
+            if (!clienteAtual || itensComanda.length === 0) {
+                alert('Dados da comanda incompletos!');
+                return;
+            }
+            
+            // Preparar dados para envio
+            const dadosComanda = {
+                RegistroHospedeID: clienteAtual.id,
+                CodigoGarcom: codigo,
+                ObservacoesComanda: observacoes,
+                ItensPedido: itensComanda.map(item => ({
+                    ProdutoID: item.id,
+                    Quantidade: item.quantidade,
+                    ObservacoesPedido: null
+                }))
+            };
+            
+            // Mostrar loading
+            document.getElementById('btnProcessarComanda').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processando...';
+            document.getElementById('btnProcessarComanda').disabled = true;
+            
+            // Obter token CSRF
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            // Enviar para o servidor
+            fetch('/lancamento/processarcomanda', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(dadosComanda)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.sucesso) {
+                    // Sucesso!
+                    alert(`COMANDA EFETIVADA!\n\n` +
+                          `Cliente: ${data.nomeCliente}\n` +
+                          `Quarto: ${data.numeroQuarto}\n` +
+                          `Pedidos processados: ${data.totalItens}\n` +
+                          `Valor total: ${data.valorTotal}\n` +
+                          `Garçom: ${data.codigoGarcom}\n\n` +
+                          `Comanda finalizada com sucesso!`);
+                    
+                    // Fechar modal e limpar tudo
+                    bootstrap.Modal.getInstance(document.getElementById('modalConfirmacao')).hide();
+                    limparComanda();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro completo:', error);
+                alert(`Erro de comunicação: ${error.message}`);
+            })
+            .finally(() => {
+                // Restaurar botão
+                document.getElementById('btnProcessarComanda').innerHTML = '<i class="fas fa-check me-1"></i>Confirmar e Efetivar';
+                document.getElementById('btnProcessarComanda').disabled = false;
+            });
         }
 
-        // Limpar formulário
-        function limparFormulario() {
-            document.getElementById('selectHospede').value = '';
-            document.getElementById('selectCategoria').value = '';
-            document.getElementById('selectProduto').innerHTML = '<option value="">Primeiro selecione uma categoria</option>';
-            document.querySelector('input[name="Quantidade"]').value = '1';
-            document.querySelector('textarea[name="Observacoes"]').value = '';
-            document.getElementById('resumoLancamento').style.display = 'none';
-            document.getElementById('btnLancar').disabled = true;
-            valorUnitarioAtual = 0;
+        // FUNÇÕES AUXILIARES
+        function limparComanda() {
+            clienteAtual = null;
+            itensComanda = [];
+            
+            document.getElementById('buscaCliente').value = '';
+            document.getElementById('clienteSelecionado').style.display = 'none';
+            document.getElementById('observacoesComanda').value = '';
+            
+            atualizarComanda();
+            atualizarResumo();
         }
 
-        // Event listeners
+        function verExtratoCompleto() {
+            if (clienteAtual) {
+                window.open(`/consulta?quarto=${clienteAtual.numeroQuarto}`, '_blank');
+            }
+        }
+
+        // Permitir enter no campo de código
         document.addEventListener('DOMContentLoaded', function() {
-            // Recalcular quando mudar hóspede
-            document.getElementById('selectHospede').addEventListener('change', calcularTotal);
-
-            // Recalcular quando mudar quantidade
-            document.querySelector('input[name="Quantidade"]').addEventListener('input', calcularTotal);
-
-            // Máscara para quantidade
-            const quantidadeInput = document.querySelector('input[name="Quantidade"]');
-            quantidadeInput.addEventListener('input', function() {
-                if (this.value < 0) this.value = 0;
-                if (this.value > 999.99) this.value = 999.99;
+            document.getElementById('codigoGarcom').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !document.getElementById('btnProcessarComanda').disabled) {
+                    processarComanda();
+                }
             });
         });
-
-        // Bootstrap form validation
-        (function() {
-            'use strict';
-            window.addEventListener('load', function() {
-                var forms = document.getElementsByClassName('needs-validation');
-                Array.prototype.filter.call(forms, function(form) {
-                    form.addEventListener('submit', function(event) {
-                        if (form.checkValidity() === false) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
-                });
-            }, false);
-        })();
     </script>
+}
+
+@{
+    @Html.AntiForgeryToken()
 }

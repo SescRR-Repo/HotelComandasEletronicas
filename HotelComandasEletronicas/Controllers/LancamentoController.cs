@@ -27,10 +27,10 @@ namespace HotelComandasEletronicas.Controllers
         #region Views Principais
 
         /// <summary>
-        /// Página principal de lançamento - Requer código ou login
+        /// Página principal de lançamento - ACESSO LIVRE (sem autenticação prévia)
+        /// Sistema de Comanda Eletrônica - Pré-lançamentos com confirmação final
         /// </summary>
         [HttpGet]
-        [RequireCodigoOuLogin]
         public async Task<IActionResult> Index()
         {
             try
@@ -39,19 +39,130 @@ namespace HotelComandasEletronicas.Controllers
                 var produtos = await _produtoService.ListarAtivosAsync();
                 var hospedes = await _registroHospedeService.ListarAtivosAsync();
 
+                // Preparar dados para JavaScript
                 ViewBag.ProdutosPorCategoria = produtos.GroupBy(p => p.Categoria).ToDictionary(g => g.Key, g => g.ToList());
                 ViewBag.HospedesAtivos = hospedes;
-                ViewBag.UsuarioLancamento = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Desconhecido";
+                
+                // NOVO: Adicionar produtos serializados para JavaScript
+                ViewBag.ProdutosTodos = produtos.Select(p => new
+                {
+                    id = p.ID,
+                    descricao = p.Descricao,
+                    categoria = p.Categoria,
+                    valor = p.Valor,
+                    valorFormatado = p.FormatarValor()
+                }).ToList();
 
-                LogarAcao("AcessoLancamento", "Acessou tela de lançamento de consumo");
+                // Log sem usuário específico - apenas acesso à comanda
+                _logger.LogInformation("Acesso à Comanda Eletrônica (pré-lançamentos) - IP: {IP}", 
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1");
 
-                return View(new LancamentoViewModel());
+                return View(new ComandaLancamentoViewModel());
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao carregar página de lançamento");
+                _logger.LogError(ex, "Erro ao carregar sistema de comanda");
                 DefinirMensagemErro("Erro ao carregar produtos. Tente novamente.");
                 return RedirecionarParaHome();
+            }
+        }
+
+        /// <summary>
+        /// Processar comanda completa - COM VALIDAÇÃO DE CÓDIGO DO GARÇOM
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcessarComanda([FromBody] ProcessarComandaViewModel model)
+        {
+            try
+            {
+                _logger.LogInformation("Iniciando processamento de comanda - Cliente ID: {ClienteId}, Garçom: {Garcom}", 
+                    model.RegistroHospedeID, model.CodigoGarcom);
+
+                // Validar modelo
+                if (!ModelState.IsValid || !model.ItensPedido.Any())
+                {
+                    _logger.LogWarning("Dados inválidos na comanda - ModelState: {ModelState}", 
+                        string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                    return Json(new { sucesso = false, mensagem = "Dados inválidos ou comanda vazia." });
+                }
+
+                // Validar código do garçom
+                if (string.IsNullOrWhiteSpace(model.CodigoGarcom) || model.CodigoGarcom.Length != 2)
+                {
+                    return Json(new { sucesso = false, mensagem = "Código do garçom inválido." });
+                }
+
+                // Buscar e validar hóspede
+                var hospede = await _registroHospedeService.BuscarPorIdAsync(model.RegistroHospedeID);
+                if (hospede == null || !hospede.IsAtivo())
+                {
+                    return Json(new { sucesso = false, mensagem = "Hóspede não encontrado ou inativo." });
+                }
+
+                var lancamentosProcessados = new List<LancamentoConsumo>();
+                decimal valorTotalComanda = 0;
+
+                // Processar cada item da comanda
+                foreach (var item in model.ItensPedido)
+                {
+                    // Buscar produto
+                    var produto = await _produtoService.BuscarPorIdAsync(item.ProdutoID);
+                    if (produto == null || !produto.IsAtivo())
+                    {
+                        return Json(new { sucesso = false, mensagem = $"Produto ID {item.ProdutoID} não encontrado ou inativo." });
+                    }
+
+                    // Criar lançamento
+                    var lancamento = new LancamentoConsumo
+                    {
+                        RegistroHospedeID = model.RegistroHospedeID,
+                        ProdutoID = item.ProdutoID,
+                        Quantidade = item.Quantidade,
+                        ValorUnitario = produto.Valor,
+                        ValorTotal = item.Quantidade * produto.Valor,
+                        DataHoraLancamento = DateTime.Now,
+                        CodigoUsuarioLancamento = model.CodigoGarcom,
+                        Status = "Ativo"
+                    };
+
+                    // Registrar lançamento
+                    var sucesso = await _lancamentoService.RegistrarConsumoAsync(lancamento);
+                    if (!sucesso)
+                    {
+                        _logger.LogError("Erro ao registrar produto {Produto} na comanda", produto.Descricao);
+                        return Json(new { sucesso = false, mensagem = $"Erro ao registrar {produto.Descricao} na comanda." });
+                    }
+
+                    lancamentosProcessados.Add(lancamento);
+                    valorTotalComanda += lancamento.ValorTotal;
+                }
+
+                // Log da comanda processada
+                LogarAcao("ProcessarComanda", 
+                    $"Comanda processada - Quarto: {hospede.NumeroQuarto} | " +
+                    $"Itens: {lancamentosProcessados.Count} | Total: {valorTotalComanda:C} | " +
+                    $"Garçom: {model.CodigoGarcom} | " +
+                    $"Pedidos: {string.Join(", ", lancamentosProcessados.Select(l => l.Produto?.Descricao ?? "N/A"))}",
+                    "LANCAMENTOS_CONSUMO");
+
+                _logger.LogInformation("Comanda processada com sucesso - {Total} itens, valor: {Valor}", 
+                    lancamentosProcessados.Count, valorTotalComanda);
+
+                return Json(new { 
+                    sucesso = true, 
+                    mensagem = $"Comanda processada com sucesso! {lancamentosProcessados.Count} pedidos registrados para o quarto {hospede.NumeroQuarto}.",
+                    totalItens = lancamentosProcessados.Count,
+                    valorTotal = valorTotalComanda.ToString("C2"),
+                    numeroQuarto = hospede.NumeroQuarto,
+                    nomeCliente = hospede.NomeCliente,
+                    codigoGarcom = model.CodigoGarcom
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao processar comanda");
+                return Json(new { sucesso = false, mensagem = "Erro interno ao processar comanda. Contate o suporte." });
             }
         }
 
@@ -94,82 +205,81 @@ namespace HotelComandasEletronicas.Controllers
 
         #endregion
 
-        #region Operações de Lançamento
+        #region APIs AJAX
 
         /// <summary>
-        /// Processar lançamento de consumo
+        /// Buscar produtos (AJAX) - SEM FILTRO INICIAL
         /// </summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [RequireCodigoOuLogin]
-        public async Task<IActionResult> Lancar(LancamentoViewModel model)
+        [HttpGet]
+        public async Task<IActionResult> BuscarProdutos(string? termo = null)
         {
-            if (!ModelState.IsValid)
-            {
-                // Recarregar dados para retornar à view
-                await RecarregarDadosView();
-                return View("Index", model);
-            }
-
             try
             {
-                // Buscar produto e hóspede
-                var produto = await _produtoService.BuscarPorIdAsync(model.ProdutoID);
-                var hospede = await _registroHospedeService.BuscarPorIdAsync(model.RegistroHospedeID);
+                var produtos = await _produtoService.ListarAtivosAsync();
 
-                if (produto == null || !produto.IsAtivo())
+                if (!string.IsNullOrWhiteSpace(termo))
                 {
-                    ModelState.AddModelError("ProdutoID", "Produto não encontrado ou inativo.");
-                    await RecarregarDadosView();
-                    return View("Index", model);
+                    produtos = produtos.Where(p => 
+                        p.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                        p.Categoria.Contains(termo, StringComparison.OrdinalIgnoreCase)
+                    ).ToList();
                 }
 
-                if (hospede == null || !hospede.IsAtivo())
+                var resultado = produtos.Select(p => new
                 {
-                    ModelState.AddModelError("RegistroHospedeID", "Hóspede não encontrado ou inativo.");
-                    await RecarregarDadosView();
-                    return View("Index", model);
-                }
+                    id = p.ID,
+                    descricao = p.Descricao,
+                    categoria = p.Categoria,
+                    valor = p.Valor,
+                    valorFormatado = p.FormatarValor()
+                }).ToList();
 
-                // Criar lançamento
-                var lancamento = new LancamentoConsumo
-                {
-                    RegistroHospedeID = model.RegistroHospedeID,
-                    ProdutoID = model.ProdutoID,
-                    Quantidade = model.Quantidade,
-                    ValorUnitario = produto.Valor,
-                    ValorTotal = model.Quantidade * produto.Valor,
-                    DataHoraLancamento = DateTime.Now,
-                    CodigoUsuarioLancamento = CodigoUsuarioAtual ?? "00",
-                    Status = "Ativo"
-                };
-
-                var sucesso = await _lancamentoService.RegistrarConsumoAsync(lancamento);
-
-                if (sucesso)
-                {
-                    LogarAcao("LancarConsumo", 
-                        $"Produto: {produto.Descricao} | Quantidade: {model.Quantidade} | " +
-                        $"Quarto: {hospede.NumeroQuarto} | Valor: {lancamento.ValorTotal:C}",
-                        "LANCAMENTOS_CONSUMO", lancamento.ID);
-
-                    DefinirMensagemSucesso($"Consumo lançado com sucesso! {produto.Descricao} - Quarto {hospede.NumeroQuarto} - {lancamento.ValorTotal:C}");
-                    
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    DefinirMensagemErro("Erro ao registrar consumo. Tente novamente.");
-                    await RecarregarDadosView();
-                    return View("Index", model);
-                }
+                return Json(resultado);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao processar lançamento");
-                DefinirMensagemErro("Erro interno ao processar lançamento. Contate o suporte.");
-                await RecarregarDadosView();
-                return View("Index", model);
+                _logger.LogError(ex, "Erro ao buscar produtos");
+                return Json(new List<object>());
+            }
+        }
+
+        /// <summary>
+        /// Buscar hóspedes por termo (AJAX)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> BuscarHospedes(string? termo = null)
+        {
+            try
+            {
+                var hospedes = await _registroHospedeService.ListarAtivosAsync();
+
+                if (!string.IsNullOrWhiteSpace(termo))
+                {
+                    // Busca inteligente conforme wireframe
+                    hospedes = hospedes.Where(h => 
+                        h.NumeroQuarto.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                        h.NomeCliente.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                        h.TelefoneCliente.Contains(termo, StringComparison.OrdinalIgnoreCase)
+                    ).ToList();
+                }
+
+                var resultado = hospedes.Select(h => new
+                {
+                    id = h.ID,
+                    numeroQuarto = h.NumeroQuarto,
+                    nomeCliente = h.NomeCliente,
+                    telefone = h.TelefoneCliente,
+                    valorGasto = h.ValorGastoTotal,
+                    valorGastoFormatado = h.ValorGastoTotal.ToString("C2"),
+                    display = $"{h.NomeCliente} (Quarto {h.NumeroQuarto})"
+                }).ToList();
+
+                return Json(resultado);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao buscar hóspedes");
+                return Json(new List<object>());
             }
         }
 
@@ -215,151 +325,6 @@ namespace HotelComandasEletronicas.Controllers
                 _logger.LogError(ex, "Erro ao cancelar lançamento ID: {Id}", id);
                 return Json(new { sucesso = false, mensagem = "Erro interno ao cancelar lançamento." });
             }
-        }
-
-        #endregion
-
-        #region APIs AJAX
-
-        /// <summary>
-        /// Buscar produtos por categoria (AJAX)
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> BuscarProdutosPorCategoria(string categoria)
-        {
-            try
-            {
-                var produtos = await _produtoService.BuscarPorCategoriaAsync(categoria);
-
-                var resultado = produtos.Select(p => new
-                {
-                    id = p.ID,
-                    descricao = p.Descricao,
-                    valor = p.Valor,
-                    valorFormatado = p.FormatarValor()
-                }).ToList();
-
-                return Json(resultado);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar produtos por categoria: {Categoria}", categoria);
-                return Json(new List<object>());
-            }
-        }
-
-        /// <summary>
-        /// Buscar hóspedes ativos (AJAX)
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> BuscarHospedes(string? termo = null)
-        {
-            try
-            {
-                var hospedes = await _registroHospedeService.ListarAtivosAsync();
-
-                if (!string.IsNullOrWhiteSpace(termo))
-                {
-                    hospedes = hospedes.Where(h => 
-                        h.NumeroQuarto.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
-                        h.NomeCliente.Contains(termo, StringComparison.OrdinalIgnoreCase)
-                    ).ToList();
-                }
-
-                var resultado = hospedes.Select(h => new
-                {
-                    id = h.ID,
-                    numeroQuarto = h.NumeroQuarto,
-                    nomeCliente = h.NomeCliente,
-                    telefone = h.TelefoneCliente,
-                    valorGasto = h.ValorGastoTotal,
-                    display = $"Quarto {h.NumeroQuarto} - {h.NomeCliente}"
-                }).ToList();
-
-                return Json(resultado);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar hóspedes");
-                return Json(new List<object>());
-            }
-        }
-
-        /// <summary>
-        /// Obter valor atual do produto (AJAX)
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> ObterValorProduto(int produtoId)
-        {
-            try
-            {
-                var produto = await _produtoService.BuscarPorIdAsync(produtoId);
-                if (produto == null)
-                {
-                    return Json(new { erro = "Produto não encontrado" });
-                }
-
-                return Json(new
-                {
-                    valor = produto.Valor,
-                    valorFormatado = produto.FormatarValor(),
-                    descricao = produto.Descricao,
-                    categoria = produto.Categoria
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao obter valor do produto ID: {ProdutoId}", produtoId);
-                return Json(new { erro = "Erro interno" });
-            }
-        }
-
-        /// <summary>
-        /// Calcular valor total do lançamento (AJAX)
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> CalcularTotal(int produtoId, decimal quantidade)
-        {
-            try
-            {
-                var produto = await _produtoService.BuscarPorIdAsync(produtoId);
-                if (produto == null)
-                {
-                    return Json(new { erro = "Produto não encontrado" });
-                }
-
-                var total = produto.Valor * quantidade;
-
-                return Json(new
-                {
-                    valorUnitario = produto.Valor,
-                    quantidade = quantidade,
-                    valorTotal = total,
-                    valorTotalFormatado = total.ToString("C2")
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao calcular total");
-                return Json(new { erro = "Erro no cálculo" });
-            }
-        }
-
-        #endregion
-
-        #region Métodos Auxiliares
-
-        /// <summary>
-        /// Recarregar dados necessários para a view
-        /// </summary>
-        private async Task RecarregarDadosView()
-        {
-            var produtos = await _produtoService.ListarAtivosAsync();
-            var hospedes = await _registroHospedeService.ListarAtivosAsync();
-
-            ViewBag.ProdutosPorCategoria = produtos.GroupBy(p => p.Categoria).ToDictionary(g => g.Key, g => g.ToList());
-            ViewBag.HospedesAtivos = hospedes;
-            ViewBag.UsuarioLancamento = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Desconhecido";
         }
 
         #endregion
