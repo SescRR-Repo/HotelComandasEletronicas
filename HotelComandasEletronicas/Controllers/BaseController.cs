@@ -36,20 +36,16 @@ namespace HotelComandasEletronicas.Controllers
         {
             get
             {
-                // Primeiro tenta sessão completa (login)
                 var codigo = HttpContext.Session.GetString("CodigoUsuario");
                 if (!string.IsNullOrWhiteSpace(codigo))
                     return codigo;
 
-                // Depois tenta sessão temporária (validação de código)
                 return HttpContext.Session.GetString("CodigoValidado");
             }
         }
 
         public bool UsuarioEstaLogado => UsuarioLogado != null;
-
         public bool UsuarioEhSupervisor => UsuarioLogado?.IsSupervisor() ?? false;
-
         public bool UsuarioEhRecepcaoOuSupervisor
         {
             get
@@ -114,7 +110,6 @@ namespace HotelComandasEletronicas.Controllers
         {
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return RedirectToAction("Login", "Usuario", new { returnUrl });
-
             return RedirectToAction("Login", "Usuario");
         }
 
@@ -122,7 +117,6 @@ namespace HotelComandasEletronicas.Controllers
         {
             if (!string.IsNullOrWhiteSpace(returnUrl))
                 return RedirectToAction("ValidarCodigo", "Usuario", new { returnUrl });
-
             return RedirectToAction("ValidarCodigo", "Usuario");
         }
 
@@ -190,18 +184,57 @@ namespace HotelComandasEletronicas.Controllers
 
         #endregion
 
-        #region Métodos de Log e Auditoria
+        #region Métodos de Log Simplificados (APENAS SERILOG)
 
-        protected void LogarAcao(string acao, string detalhes = "")
+        /// <summary>
+        /// Log estruturado usando apenas Serilog - OTIMIZADO
+        /// </summary>
+        // Método otimizado que usa apenas Serilog
+        protected void LogarAcao(string acao, string detalhes = "", string tabela = "SISTEMA", int? registroId = null)
         {
-            var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Local";
+            try
+            {
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                var usuario = UsuarioLogado?.Login ?? CodigoUsuarioAtual ?? "Sistema";
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
 
-            // Implementar log específico aqui se necessário
-            // Por ora, usar o logger padrão
-            var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
-            logger?.LogInformation("Usuário {Usuario} executou ação: {Acao}. Detalhes: {Detalhes}. IP: {IP}",
-                usuario, acao, detalhes, ip);
+                // LOG ESTRUTURADO COMPLETO EM ARQUIVO
+                logger?.LogInformation("🎯 AÇÃO: {Acao} | 👤 Usuário: {Usuario} | 📋 Tabela: {Tabela} | 🆔 ID: {RegistroId} | 📝 Detalhes: {Detalhes} | 🌐 IP: {IP}",
+                    acao, usuario, tabela, registroId, detalhes, ip);
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                logger?.LogError(ex, "❌ Erro ao registrar log para ação: {Acao}", acao);
+            }
+        }
+
+        /// <summary>
+        /// Log específico para login/logout
+        /// </summary>
+        protected void LogarLogin(string usuario, bool sucesso, string detalhes = "")
+        {
+            try
+            {
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                
+                if (sucesso)
+                {
+                    logger?.LogInformation("✅ LOGIN SUCESSO: {Usuario} | 🌐 IP: {IP} | 📝 Detalhes: {Detalhes}", 
+                        usuario, ip, detalhes);
+                }
+                else
+                {
+                    logger?.LogWarning("❌ LOGIN FALHOU: {Usuario} | 🌐 IP: {IP} | 📝 Detalhes: {Detalhes}", 
+                        usuario, ip, detalhes);
+                }
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetService<ILogger<BaseController>>();
+                logger?.LogError(ex, "❌ Erro ao registrar log de login");
+            }
         }
 
         #endregion
@@ -210,7 +243,7 @@ namespace HotelComandasEletronicas.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            // Passar dados do usuário para todas as views
+            // Passar dados do usuário para views
             ViewBag.UsuarioLogado = UsuarioLogado;
             ViewBag.CodigoUsuarioAtual = CodigoUsuarioAtual;
             ViewBag.UsuarioEstaLogado = UsuarioEstaLogado;

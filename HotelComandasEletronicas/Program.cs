@@ -1,276 +1,175 @@
-using FluentValidation.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 using HotelComandasEletronicas.Data;
 using HotelComandasEletronicas.Services;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== CONFIGURAÇÃO DO SERILOG =====
+// ===================================
+// ?? CONFIGURAÇÃO OTIMIZADA DE LOGGING (APENAS ARQUIVOS)
+// ===================================
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
     .WriteTo.Console()
-    .WriteTo.File("logs/hotel-comandas-.log",
+    .WriteTo.File("logs/hotel-comandas-.txt", 
         rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 30)
+        retainedFileCountLimit: 30,  // Manter apenas 30 dias
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// ===== CONFIGURAÇÃO DO ENTITY FRAMEWORK =====
-builder.Services.AddDbContext<ComandasDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// ===================================
+// ?? CONFIGURAÇÃO DO BANCO DE DADOS OTIMIZADA
+// ===================================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Server=.\\SQLEXPRESS;Database=HotelComandasDB;Trusted_Connection=true;TrustServerCertificate=true;";
 
-// ===== CONFIGURAÇÃO DOS CONTROLLERS E VIEWS =====
-builder.Services.AddControllersWithViews(options =>
+builder.Services.AddDbContext<ComandasDbContext>(options =>
 {
-    // Adicionar filtros globais se necessário
-    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+    options.UseSqlServer(connectionString);
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
 });
 
-// ===== CONFIGURAÇÃO DA SESSÃO =====
+// ===================================
+// ?? SERVICES ESSENCIAIS
+// ===================================
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IProdutoService, ProdutoService>();
+builder.Services.AddScoped<IRegistroHospedeService, RegistroHospedeService>();
+builder.Services.AddScoped<ILancamentoService, LancamentoService>();
+builder.Services.AddScoped<IConsultaClienteService, ConsultaClienteService>();
+// builder.Services.AddScoped<IRelatorioService, RelatorioService>(); // TEMPORARIAMENTE COMENTADO
+
+// ===================================
+// ?? CONFIGURAÇÃO WEB
+// ===================================
+builder.Services.AddControllersWithViews();
+
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(60); // Sessão expira em 1 hora
+    options.IdleTimeout = TimeSpan.FromHours(8);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.Name = "HotelComandas.Session";
 });
 
-// ===== CONFIGURAÇÃO DE CACHE =====
-builder.Services.AddMemoryCache();
-
-// ===== INJEÇÃO DE DEPENDÊNCIA DOS SERVIÇOS =====
-
-// Serviços de Negócio (Scoped - uma instância por requisição)
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IProdutoService, ProdutoService>();
-builder.Services.AddScoped<IRegistroHospedeService, RegistroHospedeService>();
-
-// Serviços que serão criados posteriormente
-builder.Services.AddScoped<ILancamentoService, LancamentoService>();
-builder.Services.AddScoped<IConsultaClienteService, ConsultaClienteService>();
-builder.Services.AddScoped<IRelatorioService, RelatorioService>();
-builder.Services.AddScoped<ILogService, LogService>();
-
-// ===== CONFIGURAÇÃO DE VALIDAÇÃO =====
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
-
-// ===== CONFIGURAÇÃO DE AUTORIZAÇÃO =====
-builder.Services.AddHttpContextAccessor();
-
-// ===== CONFIGURAÇÃO DE ANTIFORGERY =====
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "RequestVerificationToken";
     options.SuppressXFrameOptionsHeader = false;
 });
 
-// ===== CONFIGURAÇÃO DE CULTURA BRASILEIRA =====
-builder.Services.Configure<RequestLocalizationOptions>(options =>
+builder.Services.AddResponseCompression(options =>
 {
-    var supportedCultures = new[] { "pt-BR" };
-    options.SetDefaultCulture(supportedCultures[0])
-        .AddSupportedCultures(supportedCultures)
-        .AddSupportedUICultures(supportedCultures);
+    options.EnableForHttps = true;
 });
 
+builder.Services.AddHttpContextAccessor();
+
+// ===================================
+// ?? BUILD E CONFIGURAÇÃO
+// ===================================
 var app = builder.Build();
 
-// ===== CONFIGURAÇÃO DO PIPELINE DE REQUISIÇÕES =====
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-else
-{
-    app.UseDeveloperExceptionPage();
-}
 
-// Middleware de redirecionamento HTTPS
 app.UseHttpsRedirection();
-
-// Middleware de arquivos estáticos
 app.UseStaticFiles();
-
-// Middleware de roteamento
+app.UseResponseCompression();
 app.UseRouting();
-
-// Middleware de localização (cultura brasileira)
-app.UseRequestLocalization();
-
-// Middleware de sessão
 app.UseSession();
 
-// Middleware de autorização
-app.UseAuthorization();
+// Log otimizado de requests (apenas em desenvolvimento)
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("?? {Method} {Path}", context.Request.Method, context.Request.Path);
+        await next();
+    });
+}
 
-// ===== CONFIGURAÇÃO DE ROTAS =====
+// ===================================
+// ??? ROTAS
+// ===================================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Rotas específicas para funcionalidades principais
-app.MapControllerRoute(
-    name: "consulta",
-    pattern: "consulta",
-    defaults: new { controller = "ConsultaCliente", action = "Index" });
-
 app.MapControllerRoute(
     name: "lancamento",
-    pattern: "lancamento",
-    defaults: new { controller = "Lancamento", action = "Index" });
+    pattern: "lancamento/{action=Index}/{id?}",
+    defaults: new { controller = "Lancamento" });
+
+app.MapControllerRoute(
+    name: "consulta",
+    pattern: "consulta/{action=Index}/{id?}",
+    defaults: new { controller = "ConsultaCliente" });
 
 app.MapControllerRoute(
     name: "registro",
-    pattern: "registro",
-    defaults: new { controller = "RegistroHospede", action = "Index" });
+    pattern: "registro/{action=Index}/{id?}",
+    defaults: new { controller = "Registro" }); // Era "RegistroHospede"
 
-app.MapControllerRoute(
-    name: "relatorios",
-    pattern: "relatorios",
-    defaults: new { controller = "Relatorio", action = "Index" });
-
-// Rotas para API (AJAX)
-app.MapControllerRoute(
-    name: "api",
-    pattern: "api/{controller}/{action}");
-
-// ===== INICIALIZAÇÃO DO BANCO DE DADOS =====
+// ===================================
+// ?? INICIALIZAÇÃO DO BANCO OTIMIZADA
+// ===================================
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<ComandasDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ComandasDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-        // Criar banco se não existir
-        context.Database.EnsureCreated();
+        logger.LogInformation("?? Iniciando Hotel Comandas Eletrônicas v2.0 - OTIMIZADO");
 
-        // Popular dados iniciais
+        await context.Database.MigrateAsync();
+        logger.LogInformation("?? Migrations aplicadas");
+
         context.PopularDadosIniciais();
+        logger.LogInformation("?? Dados iniciais populados");
 
-        Log.Information("Banco de dados inicializado com sucesso");
+        var totalUsuarios = await context.Usuarios.CountAsync();
+        var totalProdutos = await context.Produtos.CountAsync();
+
+        logger.LogInformation("?? Sistema iniciado: {Usuarios} usuários, {Produtos} produtos",
+            totalUsuarios, totalProdutos);
     }
     catch (Exception ex)
     {
-        Log.Fatal(ex, "Erro crítico ao inicializar banco de dados");
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "? Erro na inicialização");
         throw;
     }
 }
 
-// ===== LOG DE INICIALIZAÇÃO =====
-Log.Information("=== HOTEL COMANDAS ELETRÔNICAS v2.0 ===");
-Log.Information("Sistema iniciado em {Environment} na porta {Port}",
-    app.Environment.EnvironmentName,
-    app.Urls.FirstOrDefault() ?? "localhost");
-Log.Information("Banco de dados: {ConnectionString}",
-    builder.Configuration.GetConnectionString("DefaultConnection"));
-
-app.Run();
-
-// ===== CONFIGURAÇÕES ADICIONAIS =====
-
-/// <summary>
-/// Extensão para configurar serviços específicos do hotel
-/// </summary>
-public static class ServiceExtensions
+// ===================================
+// ?? INICIAR APLICAÇÃO
+// ===================================
+try
 {
-    public static IServiceCollection AddHotelServices(this IServiceCollection services)
-    {
-        // Configurações específicas do negócio
-        services.Configure<HotelSettings>(options =>
-        {
-            options.NomeHotel = "Instância Ecológica do Tepequém";
-            options.VersaoSistema = "v2.0";
-            options.TimeoutSessao = TimeSpan.FromMinutes(60);
-            options.MaxTentativasLogin = 3;
-        });
-
-        return services;
-    }
+    Log.Information("?? Sistema Hotel Comandas OTIMIZADO iniciado!");
+    app.Run();
 }
-
-/// <summary>
-/// Configurações específicas do hotel
-/// </summary>
-public class HotelSettings
+catch (Exception ex)
 {
-    public string NomeHotel { get; set; } = string.Empty;
-    public string VersaoSistema { get; set; } = string.Empty;
-    public TimeSpan TimeoutSessao { get; set; }
-    public int MaxTentativasLogin { get; set; }
+    Log.Fatal(ex, "?? Erro fatal na aplicação");
 }
-
-/// <summary>
-/// Middleware personalizado para log de requisições
-/// </summary>
-public class RequestLoggingMiddleware
+finally
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<RequestLoggingMiddleware> _logger;
-
-    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        var startTime = DateTime.UtcNow;
-
-        try
-        {
-            await _next(context);
-        }
-        finally
-        {
-            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
-
-            _logger.LogInformation("HTTP {Method} {Path} responded {StatusCode} in {ElapsedMs}ms",
-                context.Request.Method,
-                context.Request.Path,
-                context.Response.StatusCode,
-                elapsedMs);
-        }
-    }
-}
-
-/// <summary>
-/// Middleware para tratamento de erros específicos do sistema
-/// </summary>
-public class ErrorHandlingMiddleware
-{
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ErrorHandlingMiddleware> _logger;
-
-    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
-        {
-            await _next(context);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro não tratado na requisição {Method} {Path}",
-                context.Request.Method, context.Request.Path);
-
-            // Redirecionar para página de erro amigável
-            if (!context.Response.HasStarted)
-            {
-                context.Response.Redirect("/Home/Error");
-            }
-        }
-    }
+    Log.CloseAndFlush();
 }

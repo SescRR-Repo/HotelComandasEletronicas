@@ -19,20 +19,20 @@ namespace HotelComandasEletronicas.Services
         {
             // Implementação será feita na próxima etapa
             return await _context.RegistrosHospede
-                .FirstOrDefaultAsync(r => r.NumeroQuarto == quarto && r.IsAtivo());
+                .FirstOrDefaultAsync(r => r.NumeroQuarto == quarto && r.Status == "Ativo");
         }
 
         public async Task<RegistroHospede?> BuscarPorQuartoAsync(string numeroQuarto)
         {
             return await _context.RegistrosHospede
-                .FirstOrDefaultAsync(r => r.NumeroQuarto == numeroQuarto && r.IsAtivo());
+                .FirstOrDefaultAsync(r => r.NumeroQuarto == numeroQuarto && r.Status == "Ativo");
         }
 
         public async Task<RegistroHospede?> BuscarPorNomeETelefoneAsync(string nome, string telefone)
         {
             return await _context.RegistrosHospede
                 .FirstOrDefaultAsync(r => r.NomeCliente.Contains(nome) &&
-                                        r.TelefoneCliente.Contains(telefone) && r.IsAtivo());
+                                        r.TelefoneCliente.Contains(telefone) && r.Status == "Ativo");
         }
 
         public async Task<List<LancamentoConsumo>> GetExtratoPorQuartoAsync(string numeroQuarto)
@@ -67,9 +67,9 @@ namespace HotelComandasEletronicas.Services
             {
                 Hospede = hospede,
                 Consumos = consumos,
-                TotalGasto = consumos.Where(c => c.IsAtivo()).Sum(c => c.ValorTotal),
+                TotalGasto = consumos.Where(c => c.Status == "Ativo").Sum(c => c.ValorTotal),
                 UltimaAtualizacao = DateTime.Now,
-                TotalItens = consumos.Count(c => c.IsAtivo())
+                TotalItens = consumos.Count(c => c.Status == "Ativo")
             };
         }
 

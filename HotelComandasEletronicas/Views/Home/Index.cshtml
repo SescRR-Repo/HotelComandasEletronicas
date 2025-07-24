@@ -293,6 +293,16 @@
                         </a>
                     </div>
                 </div>
+                <div class="row">
+                    <!-- Teste de Sistema -->
+                    <div class="col-lg-3 mb-3">
+                        <a href="/home/testarregistrohospedes" class="btn btn-info btn-lg w-100">
+                            <i class="fas fa-users-cog fa-2x mb-2"></i>
+                            <div>Testar Sistema</div>
+                            <small>Verificar registro</small>
+                        </a>
+                    </div>
+                </div>
                 <small class="text-muted">
                     <i class="fas fa-info-circle me-1"></i>
                     Estes botões devem ser removidos na versão de produção.
@@ -305,19 +315,30 @@
 <!-- Informações do Sistema -->
 <div class="row mt-4">
     <div class="col-12">
-        <div class="alert alert-info">
+        <div class="alert alert-success">
             <h5 class="alert-heading">
-                <i class="fas fa-info-circle me-2"></i>
-                Status da ETAPA 1 - Configuração Base
+                <i class="fas fa-check-circle me-2"></i>
+                Status da ETAPA 4.1.5 - Sistema de Registro de Hóspedes ✅ CONCLUÍDO
             </h5>
-            <p class="mb-2">✅ <strong>Projeto ASP.NET Core 8 MVC:</strong> Criado e configurado</p>
-            <p class="mb-2">✅ <strong>Entity Framework Core 8:</strong> Configurado com SQL Server Express</p>
-            <p class="mb-2">✅ <strong>Models:</strong> 5 entidades criadas baseadas no DER</p>
-            <p class="mb-2">✅ <strong>Banco de Dados:</strong> Criado automaticamente com dados iniciais</p>
-            <p class="mb-0">✅ <strong>Layout Responsivo:</strong> Bootstrap 5 configurado para mobile/desktop</p>
+            <p class="mb-2">✅ <strong>RegistroController:</strong> CRUD completo com validações e segurança</p>
+            <p class="mb-2">✅ <strong>RegistroHospedeService:</strong> Lógica de negócio robusta implementada</p>
+            <p class="mb-2">✅ <strong>ViewModels:</strong> RegistroHospedeViewModel com validações completas</p>
+            <p class="mb-2">✅ <strong>Views:</strong> Interface completa (Index, Cadastrar, Editar, Detalhes)</p>
+            <p class="mb-2">✅ <strong>Funcionalidades:</strong> Check-in, edição, finalização e busca inteligente</p>
+            <p class="mb-0">✅ <strong>Navegação:</strong> Menu atualizado com acesso direto aos hóspedes</p>
+            <hr>
+            <h5 class="alert-heading">
+                <i class="fas fa-check-circle me-2"></i>
+                Status da ETAPA 4.2 - Sistema de Lançamento ✅ CONCLUÍDO
+            </h5>
+            <p class="mb-2">✅ <strong>LancamentoController:</strong> Criado com todas as funcionalidades</p>
+            <p class="mb-2">✅ <strong>LancamentoService:</strong> Implementado com validações robustas</p>
+            <p class="mb-2">✅ <strong>ViewModels:</strong> LancamentoViewModel e auxiliares criados</p>
+            <p class="mb-2">✅ <strong>Views:</strong> Interface de lançamento e histórico implementadas</p>
+            <p class="mb-0">✅ <strong>Integração:</strong> Sistema totalmente integrado com registro de hóspedes</p>
             <hr>
             <p class="mb-0">
-                <strong>Próxima Etapa:</strong> Implementar sistema de autenticação e validação de códigos.
+                <strong>Próxima Etapa:</strong> Sistema de Consulta para Clientes (Etapa 4.3)
             </p>
         </div>
     </div>

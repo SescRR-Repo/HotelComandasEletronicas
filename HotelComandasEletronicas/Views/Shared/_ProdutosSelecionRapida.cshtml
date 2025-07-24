@@ -1,0 +1,59 @@
+@model List<HotelComandasEletronicas.Models.Produto>
+
+<!-- Cards de Produtos por Categoria (Componente Reutilizável) -->
+<div class="row">
+    @if (Model?.Any() == true)
+    {
+        var produtosPorCategoria = Model.GroupBy(p => p.Categoria).ToDictionary(g => g.Key, g => g.ToList());
+        
+        @foreach (var categoria in produtosPorCategoria)
+        {
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header @(categoria.Key == "Bebidas" ? "bg-info" : categoria.Key == "Comidas" ? "bg-warning text-dark" : "bg-success") text-white">
+                        <h6 class="mb-0">
+                            <i class="@(categoria.Key == "Bebidas" ? "fas fa-glass-whiskey" : categoria.Key == "Comidas" ? "fas fa-utensils" : "fas fa-concierge-bell") me-2"></i>
+                            @categoria.Key
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            @foreach (var produto in categoria.Value.Take(6))
+                            {
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-start produto-rapido"
+                                            data-produto-id="@produto.ID"
+                                            data-produto-nome="@produto.Descricao"
+                                            data-produto-valor="@produto.Valor"
+                                            data-categoria="@categoria.Key"
+                                            onclick="selecionarProdutoRapido(this)">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-truncate">@produto.Descricao</small>
+                                            <small class="text-success fw-bold">@produto.FormatarValor()</small>
+                                        </div>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        @if (categoria.Value.Count > 6)
+                        {
+                            <div class="text-center mt-2">
+                                <small class="text-muted">+@(categoria.Value.Count - 6) produtos</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <h5>Nenhum produto disponível</h5>
+                <p class="mb-0">Produtos serão carregados quando disponíveis.</p>
+            </div>
+        </div>
+    }
+</div>

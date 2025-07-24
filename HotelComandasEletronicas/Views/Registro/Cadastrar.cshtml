@@ -1,0 +1,352 @@
+@model HotelComandasEletronicas.ViewModels.RegistroHospedeViewModel
+@{
+    ViewData["Title"] = "Novo Check-in - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-recepcao mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-user-plus me-3"></i>
+                Novo Check-in
+            </h2>
+            <p class="mb-0 fs-5">Registrar entrada de hóspede</p>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário de Cadastro -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bed me-2"></i>
+                    Dados do Hóspede
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <!-- Alertas de erro -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Corrija os erros abaixo:</strong>
+                        <ul class="mb-0 mt-2">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Formulário -->
+                <form asp-action="Cadastrar" method="post" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <div class="row">
+                        <!-- Número do Quarto -->
+                        <div class="col-lg-4 mb-3">
+                            <label asp-for="NumeroQuarto" class="form-label">
+                                <i class="fas fa-door-closed me-2"></i>
+                                Número do Quarto *
+                            </label>
+                            <input asp-for="NumeroQuarto" type="text" class="form-control fs-5 fw-bold text-center" 
+                                   placeholder="Ex: 101, 205A, Chalé 3" 
+                                   onblur="verificarQuarto()" 
+                                   style="background: #f8f9fa;" required />
+                            <span asp-validation-for="NumeroQuarto" class="text-danger small"></span>
+                            <div id="quartoStatus" class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Digite o número ou nome do quarto
+                            </div>
+                        </div>
+
+                        <!-- Nome do Cliente -->
+                        <div class="col-lg-8 mb-3">
+                            <label asp-for="NomeCliente" class="form-label">
+                                <i class="fas fa-user me-2"></i>
+                                Nome Completo do Cliente *
+                            </label>
+                            <input asp-for="NomeCliente" type="text" class="form-control" 
+                                   placeholder="Nome completo do hóspede" 
+                                   style="text-transform: capitalize;" required />
+                            <span asp-validation-for="NomeCliente" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Nome que aparecerá nos lançamentos
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Telefone -->
+                        <div class="col-lg-6 mb-3">
+                            <label asp-for="TelefoneCliente" class="form-label">
+                                <i class="fas fa-phone me-2"></i>
+                                Telefone de Contato *
+                            </label>
+                            <input asp-for="TelefoneCliente" type="tel" class="form-control" 
+                                   placeholder="(95) 99999-1234" 
+                                   onkeyup="aplicarMascaraTelefone(this)" required />
+                            <span asp-validation-for="TelefoneCliente" class="text-danger small"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Para contato em caso de necessidade
+                            </div>
+                        </div>
+
+                        <!-- Data/Hora (apenas informativo) -->
+                        <div class="col-lg-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calendar me-2"></i>
+                                Data/Hora do Check-in
+                            </label>
+                            <input type="text" class="form-control" 
+                                   value="@DateTime.Now.ToString("dd/MM/yyyy HH:mm")" 
+                                   readonly style="background: #e9ecef;" />
+                            <div class="form-text">
+                                <i class="fas fa-clock me-1"></i>
+                                Registrado automaticamente
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumo do Check-in -->
+                    <div class="card border-info mb-4" id="resumoCheckin" style="display: none;">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-clipboard-check me-2"></i>
+                                Resumo do Check-in
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Quarto:</strong> <span id="resumoQuarto">-</span><br>
+                                    <strong>Hóspede:</strong> <span id="resumoNome">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Telefone:</strong> <span id="resumoTelefone">-</span><br>
+                                    <strong>Check-in:</strong> <span id="resumoData">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="row">
+                        <div class="col-lg-6 mb-2">
+                            <button type="submit" class="btn btn-success w-100 btn-lg" id="btnCadastrar" disabled>
+                                <i class="fas fa-check me-2"></i>
+                                Confirmar Check-in
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="reset" class="btn btn-outline-secondary w-100" onclick="limparFormulario()">
+                                <i class="fas fa-eraser me-2"></i>
+                                Limpar
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <a href="/registro" class="btn btn-outline-info w-100">
+                                <i class="fas fa-list me-2"></i>
+                                Lista
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card com Dicas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Dicas para o Check-in
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong><i class="fas fa-door-closed me-2"></i>Numeração de Quartos:</strong>
+                        <ul class="small mb-0">
+                            <li>Use números simples: 101, 102, 103</li>
+                            <li>Ou com letras: 205A, 205B</li>
+                            <li>Chalés: Chalé 1, Chalé 2</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <strong><i class="fas fa-user me-2"></i>Nome do Cliente:</strong>
+                        <ul class="small mb-0">
+                            <li>Use o nome completo</li>
+                            <li>Confira a grafia correta</li>
+                            <li>Aparecerá nos lançamentos</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <strong><i class="fas fa-phone me-2"></i>Telefone:</strong>
+                        <ul class="small mb-0">
+                            <li>Preferencialmente celular</li>
+                            <li>Com DDD da região</li>
+                            <li>Para contato emergencial</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Verificar se quarto já existe
+        function verificarQuarto() {
+            const quarto = document.getElementById('NumeroQuarto').value.trim();
+            const statusDiv = document.getElementById('quartoStatus');
+
+            if (!quarto) {
+                statusDiv.innerHTML = '<i class="fas fa-info-circle me-1"></i>Digite o número ou nome do quarto';
+                statusDiv.className = 'form-text';
+                return;
+            }
+
+            fetch(`/registro/verificarquarto?numeroQuarto=${encodeURIComponent(quarto)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Erro ao verificar quarto';
+                        statusDiv.className = 'form-text text-warning';
+                    } else if (data.existe) {
+                        statusDiv.innerHTML = '<i class="fas fa-times-circle me-1"></i>Quarto já está ocupado!';
+                        statusDiv.className = 'form-text text-danger';
+                        document.getElementById('btnCadastrar').disabled = true;
+                    } else {
+                        statusDiv.innerHTML = '<i class="fas fa-check-circle me-1"></i>Quarto disponível';
+                        statusDiv.className = 'form-text text-success';
+                        validarFormulario();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Erro na verificação';
+                    statusDiv.className = 'form-text text-warning';
+                });
+        }
+
+        // Aplicar máscara de telefone
+        function aplicarMascaraTelefone(elemento) {
+            let value = elemento.value.replace(/\D/g, '');
+            
+            if (value.length >= 11) {
+                value = value.substring(0, 11);
+                elemento.value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length >= 10) {
+                elemento.value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else if (value.length >= 6) {
+                elemento.value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else if (value.length >= 2) {
+                elemento.value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            } else {
+                elemento.value = value;
+            }
+
+            validarFormulario();
+        }
+
+        // Validar formulário completo
+        function validarFormulario() {
+            const quarto = document.getElementById('NumeroQuarto').value.trim();
+            const nome = document.getElementById('NomeCliente').value.trim();
+            const telefone = document.getElementById('TelefoneCliente').value.trim();
+            const btnCadastrar = document.getElementById('btnCadastrar');
+            const quartoStatus = document.getElementById('quartoStatus');
+
+            // Verificar se todos os campos estão preenchidos e quarto não está ocupado
+            const formularioValido = quarto.length >= 1 && 
+                                   nome.length >= 2 && 
+                                   telefone.length >= 8 &&
+                                   !quartoStatus.classList.contains('text-danger');
+
+            btnCadastrar.disabled = !formularioValido;
+
+            // Atualizar resumo
+            if (formularioValido) {
+                atualizarResumo();
+            } else {
+                document.getElementById('resumoCheckin').style.display = 'none';
+            }
+        }
+
+        // Atualizar resumo do check-in
+        function atualizarResumo() {
+            const quarto = document.getElementById('NumeroQuarto').value.trim();
+            const nome = document.getElementById('NomeCliente').value.trim();
+            const telefone = document.getElementById('TelefoneCliente').value.trim();
+
+            if (quarto && nome && telefone) {
+                document.getElementById('resumoQuarto').textContent = quarto;
+                document.getElementById('resumoNome').textContent = nome;
+                document.getElementById('resumoTelefone').textContent = telefone;
+                document.getElementById('resumoCheckin').style.display = 'block';
+            } else {
+                document.getElementById('resumoCheckin').style.display = 'none';
+            }
+        }
+
+        // Limpar formulário
+        function limparFormulario() {
+            document.getElementById('NumeroQuarto').value = '';
+            document.getElementById('NomeCliente').value = '';
+            document.getElementById('TelefoneCliente').value = '';
+            document.getElementById('quartoStatus').innerHTML = '<i class="fas fa-info-circle me-1"></i>Digite o número ou nome do quarto';
+            document.getElementById('quartoStatus').className = 'form-text';
+            document.getElementById('resumoCheckin').style.display = 'none';
+            document.getElementById('btnCadastrar').disabled = true;
+            document.getElementById('NumeroQuarto').focus();
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-focus no primeiro campo
+            document.getElementById('NumeroQuarto').focus();
+
+            // Validar em tempo real
+            document.getElementById('NumeroQuarto').addEventListener('input', validarFormulario);
+            document.getElementById('NomeCliente').addEventListener('input', validarFormulario);
+            document.getElementById('TelefoneCliente').addEventListener('input', validarFormulario);
+
+            // Capitalizar nome automaticamente
+            document.getElementById('NomeCliente').addEventListener('input', function() {
+                this.value = this.value.toLowerCase().replace(/(?:^|\s)\S/g, function(a) { 
+                    return a.toUpperCase(); 
+                });
+            });
+        });
+
+        // Bootstrap form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

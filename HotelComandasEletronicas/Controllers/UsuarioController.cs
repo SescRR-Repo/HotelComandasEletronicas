@@ -9,7 +9,7 @@ namespace HotelComandasEletronicas.Controllers
     {
         private readonly IUsuarioService _usuarioService;
         private readonly ILogger<UsuarioController> _logger;
-
+        
         public UsuarioController(IUsuarioService usuarioService, ILogger<UsuarioController> logger)
         {
             _usuarioService = usuarioService;

@@ -75,7 +75,7 @@ namespace HotelComandasEletronicas.Services
                 if (registro.NumeroQuarto != registroExistente.NumeroQuarto)
                 {
                     var quartoExiste = await _context.RegistrosHospede
-                        .AnyAsync(r => r.NumeroQuarto == registro.NumeroQuarto && r.ID != registro.ID && r.IsAtivo());
+                        .AnyAsync(r => r.NumeroQuarto == registro.NumeroQuarto && r.ID != registro.ID && r.Status == "Ativo");
                     if (quartoExiste)
                         return false;
                 }
@@ -147,7 +147,7 @@ namespace HotelComandasEletronicas.Services
                 return await _context.RegistrosHospede
                     .Include(r => r.Lancamentos)
                     .ThenInclude(l => l.Produto)
-                    .FirstOrDefaultAsync(r => r.NumeroQuarto == numeroQuarto && r.IsAtivo());
+                    .FirstOrDefaultAsync(r => r.NumeroQuarto == numeroQuarto && r.Status == "Ativo");
             }
             catch (Exception ex)
             {
@@ -165,7 +165,7 @@ namespace HotelComandasEletronicas.Services
                     .ThenInclude(l => l.Produto)
                     .FirstOrDefaultAsync(r => r.NomeCliente.Contains(nome) &&
                                             r.TelefoneCliente.Contains(telefone) &&
-                                            r.IsAtivo());
+                                            r.Status == "Ativo");
             }
             catch (Exception ex)
             {
@@ -229,7 +229,7 @@ namespace HotelComandasEletronicas.Services
         private async Task<List<RegistroHospede>> BuscarPorQuartoSimilarAsync(string termo)
         {
             return await _context.RegistrosHospede
-                .Where(r => r.NumeroQuarto.Contains(termo) && r.IsAtivo())
+                .Where(r => r.NumeroQuarto.Contains(termo) && r.Status == "Ativo")
                 .OrderBy(r => r.NumeroQuarto)
                 .ToListAsync();
         }
@@ -237,7 +237,7 @@ namespace HotelComandasEletronicas.Services
         public async Task<List<RegistroHospede>> BuscarPorNomeAsync(string nome)
         {
             return await _context.RegistrosHospede
-                .Where(r => r.NomeCliente.Contains(nome) && r.IsAtivo())
+                .Where(r => r.NomeCliente.Contains(nome) && r.Status == "Ativo")
                 .OrderBy(r => r.NomeCliente)
                 .ToListAsync();
         }
@@ -248,7 +248,7 @@ namespace HotelComandasEletronicas.Services
             var telefoneLimpo = Regex.Replace(telefone, @"[^\d]", "");
 
             return await _context.RegistrosHospede
-                .Where(r => r.TelefoneCliente.Contains(telefoneLimpo) && r.IsAtivo())
+                .Where(r => r.TelefoneCliente.Contains(telefoneLimpo) && r.Status == "Ativo")
                 .OrderBy(r => r.NomeCliente)
                 .ToListAsync();
         }
@@ -258,7 +258,7 @@ namespace HotelComandasEletronicas.Services
             return await _context.RegistrosHospede
                 .Where(r => (r.NomeCliente.Contains(termo) ||
                            r.NumeroQuarto.Contains(termo) ||
-                           r.TelefoneCliente.Contains(termo)) && r.IsAtivo())
+                           r.TelefoneCliente.Contains(termo)) && r.Status == "Ativo")
                 .OrderBy(r => r.NomeCliente)
                 .ToListAsync();
         }
@@ -340,7 +340,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 var query = _context.RegistrosHospede
-                    .Where(r => r.NumeroQuarto == numeroQuarto && r.IsAtivo());
+                    .Where(r => r.NumeroQuarto == numeroQuarto && r.Status == "Ativo");
 
                 if (excluirId.HasValue)
                 {
@@ -375,7 +375,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.LancamentosConsumo
-                    .AnyAsync(l => l.RegistroHospedeID == id && l.IsAtivo());
+                    .AnyAsync(l => l.RegistroHospedeID == id && l.Status == "Ativo");
             }
             catch (Exception ex)
             {
@@ -397,7 +397,7 @@ namespace HotelComandasEletronicas.Services
                     return;
 
                 var totalGasto = await _context.LancamentosConsumo
-                    .Where(l => l.RegistroHospedeID == hospedeId && l.IsAtivo())
+                    .Where(l => l.RegistroHospedeID == hospedeId && l.Status == "Ativo")
                     .SumAsync(l => l.ValorTotal);
 
                 registro.ValorGastoTotal = totalGasto;
@@ -416,7 +416,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.RegistrosHospede
-                    .Where(r => r.IsAtivo())
+                    .Where(r => r.Status == "Ativo")
                     .SumAsync(r => r.ValorGastoTotal);
             }
             catch (Exception ex)
@@ -431,7 +431,7 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 return await _context.RegistrosHospede
-                    .CountAsync(r => r.IsAtivo());
+                    .CountAsync(r => r.Status == "Ativo");
             }
             catch (Exception ex)
             {
@@ -454,7 +454,7 @@ namespace HotelComandasEletronicas.Services
                     ["HospedesAtivos"] = await ContarHospedesAtivosAsync(),
                     ["HospedesFinalizados"] = await _context.RegistrosHospede.CountAsync(r => r.Status == "Finalizado"),
                     ["ValorTotalGeral"] = await CalcularTotalGeralAsync(),
-                    ["MediaValorPorHospede"] = await _context.RegistrosHospede.Where(r => r.IsAtivo()).AverageAsync(r => (double?)r.ValorGastoTotal) ?? 0,
+                    ["MediaValorPorHospede"] = await _context.RegistrosHospede.Where(r => r.Status == "Ativo").AverageAsync(r => (double?)r.ValorGastoTotal) ?? 0,
                     ["UltimoRegistro"] = await _context.RegistrosHospede.OrderByDescending(r => r.DataRegistro).FirstOrDefaultAsync()
                 };
 

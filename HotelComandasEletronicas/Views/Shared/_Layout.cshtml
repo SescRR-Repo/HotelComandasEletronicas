@@ -43,6 +43,55 @@
                                 Lançar Consumo
                             </a>
                         </li>
+
+                        <!-- Links restritos (apenas usuários logados) -->
+                        @if (Context.Session.GetString("UsuarioLogado") != null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="/registro">
+                                    <i class="fas fa-users me-1"></i>
+                                    Hóspedes
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cogs me-1"></i>
+                                    Gerencial
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="/registro/cadastrar">
+                                            <i class="fas fa-user-plus me-2"></i>Novo Check-in
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/lancamento/historico">
+                                            <i class="fas fa-history me-2"></i>Histórico de Lançamentos
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/produto">
+                                            <i class="fas fa-box me-2"></i>Produtos
+                                        </a>
+                                    </li>
+                                    @if (ViewBag.UsuarioEhSupervisor == true)
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="/usuario">
+                                                <i class="fas fa-users-cog me-2"></i>Usuários
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="/relatorios">
+                                                <i class="fas fa-chart-bar me-2"></i>Relatórios
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </li>
+                        }
                     </ul>
 
                     <ul class="navbar-nav">

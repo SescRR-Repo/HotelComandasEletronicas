@@ -1,0 +1,434 @@
+@model HotelComandasEletronicas.Models.RegistroHospede
+@{
+    ViewData["Title"] = "Detalhes do Hóspede - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-recepcao mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-user-circle me-3"></i>
+                Detalhes da Hospedagem
+            </h2>
+            <p class="mb-0 fs-5">@Model.NomeCliente - Quarto @Model.NumeroQuarto</p>
+            <small>
+                Check-in: <strong>@Model.DataRegistro.ToString("dd/MM/yyyy HH:mm")</strong> | 
+                Status: <span class="badge @(Model.IsAtivo() ? "bg-success" : "bg-secondary")">@Model.Status</span>
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Informações Principais -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informações do Hóspede
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong><i class="fas fa-door-closed me-2"></i>Quarto:</strong></td>
+                                <td><span class="badge bg-primary fs-6">@Model.NumeroQuarto</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="fas fa-user me-2"></i>Nome:</strong></td>
+                                <td>@Model.NomeCliente</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="fas fa-phone me-2"></i>Telefone:</strong></td>
+                                <td>@Model.TelefoneCliente</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="fas fa-calendar-plus me-2"></i>Check-in:</strong></td>
+                                <td>@Model.DataRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong><i class="fas fa-clock me-2"></i>Tempo:</strong></td>
+                                <td>@((DateTime.Now - Model.DataRegistro).Days) dia(s)</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="fas fa-dollar-sign me-2"></i>Total Gasto:</strong></td>
+                                <td><span class="fs-5 fw-bold text-success">@Model.ValorGastoTotal.ToString("C2")</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="fas fa-tasks me-2"></i>Status:</strong></td>
+                                <td>
+                                    <span class="badge @(Model.IsAtivo() ? "bg-success" : "bg-secondary") fs-6">
+                                        @Model.Status
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="fas fa-user-cog me-2"></i>Registrado por:</strong></td>
+                                <td><code>@Model.UsuarioRegistro</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas Rápidas -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Estatísticas
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-shopping-cart fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-0">@(Model.Lancamentos?.Count(l => l.IsAtivo()) ?? 0)</h4>
+                    <small class="text-muted">Itens Consumidos</small>
+                </div>
+                <div class="mb-3">
+                    <i class="fas fa-calendar-day fa-2x text-warning mb-2"></i>
+                    <h4 class="mb-0">@((DateTime.Now - Model.DataRegistro).Days)</h4>
+                    <small class="text-muted">Dias Hospedado</small>
+                </div>
+                @if (Model.Lancamentos?.Any() == true)
+                {
+                    <div class="mb-3">
+                        <i class="fas fa-clock fa-2x text-secondary mb-2"></i>
+                        <h6 class="mb-0">@Model.Lancamentos.Where(l => l.IsAtivo()).Max(l => l.DataHoraLancamento).ToString("dd/MM HH:mm")</h6>
+                        <small class="text-muted">Último Consumo</small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Consumos Registrados -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-alt me-2"></i>
+                    Histórico de Consumos
+                </h5>
+                <span class="badge bg-light text-dark">
+                    @(Model.Lancamentos?.Count(l => l.IsAtivo()) ?? 0) item(s)
+                </span>
+            </div>
+            <div class="card-body">
+                @if (Model.Lancamentos?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Produto</th>
+                                    <th>Quantidade</th>
+                                    <th>Valor Unit.</th>
+                                    <th>Total</th>
+                                    <th>Usuário</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var lancamento in Model.Lancamentos.OrderByDescending(l => l.DataHoraLancamento))
+                                {
+                                    <tr class="@(!lancamento.IsAtivo() ? "table-danger opacity-75" : "")">
+                                        <td>
+                                            <small>@lancamento.DataHoraLancamento.ToString("dd/MM/yyyy HH:mm")</small>
+                                        </td>
+                                        <td>
+                                            <strong>@lancamento.Produto?.Descricao</strong>
+                                            <br><small class="text-muted">@lancamento.Produto?.Categoria</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">@lancamento.Quantidade</span>
+                                        </td>
+                                        <td>@lancamento.ValorUnitario.ToString("C2")</td>
+                                        <td>
+                                            <strong class="@(lancamento.IsAtivo() ? "text-success" : "text-danger")">
+                                                @lancamento.ValorTotal.ToString("C2")
+                                            </strong>
+                                        </td>
+                                        <td><code>@lancamento.CodigoUsuarioLancamento</code></td>
+                                        <td>
+                                            @if (lancamento.IsAtivo())
+                                            {
+                                                <span class="badge bg-success">Ativo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Cancelado</span>
+                                                @if (!string.IsNullOrWhiteSpace(lancamento.ObservacoesCancelamento))
+                                                {
+                                                    <br><small class="text-muted">@lancamento.ObservacoesCancelamento</small>
+                                                }
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-primary">
+                                    <th colspan="4" class="text-end">Total Geral:</th>
+                                    <th>@Model.Lancamentos.Where(l => l.IsAtivo()).Sum(l => l.ValorTotal).ToString("C2")</th>
+                                    <th colspan="2"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum consumo registrado</h5>
+                        <p class="text-muted">Este hóspede ainda não possui lançamentos.</p>
+                        @if (Model.IsAtivo())
+                        {
+                            <a href="/lancamento" class="btn btn-success">
+                                <i class="fas fa-plus me-2"></i>
+                                Registrar Primeiro Consumo
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Disponíveis -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Ações Disponíveis
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 mb-2">
+                        <a href="/registro" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-list me-2"></i>
+                            Lista de Hóspedes
+                        </a>
+                    </div>
+                    
+                    @if (Model.IsAtivo())
+                    {
+                        <div class="col-lg-3 mb-2">
+                            <a href="/registro/editar/@Model.ID" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-edit me-2"></i>
+                                Editar Dados
+                            </a>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <a href="/lancamento" class="btn btn-outline-success w-100">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                Novo Consumo
+                            </a>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="button" class="btn btn-outline-danger w-100" 
+                                    onclick="finalizarHospedagem()" 
+                                    @(ViewBag.PodeFinalizar == false ? "disabled" : "")>
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                Finalizar Check-out
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-lg-9">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Hospedagem Finalizada:</strong> Este registro foi encerrado e não pode mais ser alterado.
+                                O quarto @Model.NumeroQuarto está disponível para nova hospedagem.
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.IsAtivo())
+                {
+                    <hr>
+                    <div class="row">
+                        <div class="col-lg-3 mb-2">
+                            <button type="button" class="btn btn-outline-info w-100" onclick="atualizarValorGasto()">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                Atualizar Valor
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="imprimirExtrato()">
+                                <i class="fas fa-print me-2"></i>
+                                Imprimir Extrato
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="button" class="btn btn-outline-info w-100" onclick="exportarDados()">
+                                <i class="fas fa-download me-2"></i>
+                                Exportar Dados
+                            </button>
+                        </div>
+                        <div class="col-lg-3 mb-2">
+                            <button type="button" class="btn btn-outline-warning w-100" onclick="location.reload()">
+                                <i class="fas fa-refresh me-2"></i>
+                                Atualizar Página
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para finalização -->
+<div class="modal fade" id="modalFinalizarHospedagem" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    Finalizar Hospedagem - Check-out
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Atenção:</strong> Esta ação é irreversível! Ao finalizar a hospedagem:
+                    <ul class="mb-0 mt-2">
+                        <li>O quarto @Model.NumeroQuarto será liberado</li>
+                        <li>Não será possível fazer novos lançamentos</li>
+                        <li>O registro será marcado como "Finalizado"</li>
+                        <li>Esta é a ação de check-out final</li>
+                    </ul>
+                </div>
+
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Resumo da Hospedagem</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Hóspede:</strong> @Model.NomeCliente<br>
+                                <strong>Quarto:</strong> @Model.NumeroQuarto<br>
+                                <strong>Check-in:</strong> @Model.DataRegistro.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tempo Total:</strong> @((DateTime.Now - Model.DataRegistro).Days) dia(s)<br>
+                                <strong>Itens Consumidos:</strong> @(Model.Lancamentos?.Count(l => l.IsAtivo()) ?? 0)<br>
+                                <strong>Valor Total:</strong> <span class="fs-5 fw-bold text-success">@Model.ValorGastoTotal.ToString("C2")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmarFinalizacao()">
+                    <i class="fas fa-check me-1"></i>Confirmar Check-out Final
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Finalizar hospedagem
+        function finalizarHospedagem() {
+            new bootstrap.Modal(document.getElementById('modalFinalizarHospedagem')).show();
+        }
+
+        // Confirmar finalização
+        function confirmarFinalizacao() {
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch(`/registro/finalizar/@Model.ID`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert('Check-out realizado com sucesso!\n\nQuarto @Model.NumeroQuarto liberado.');
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao finalizar hospedagem. Tente novamente.');
+            });
+
+            bootstrap.Modal.getInstance(document.getElementById('modalFinalizarHospedagem')).hide();
+        }
+
+        // Atualizar valor gasto
+        function atualizarValorGasto() {
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch(`/registro/atualizarvalorgasto/@Model.ID`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sucesso) {
+                    alert(`Valor atualizado: ${data.valorFormatado}`);
+                    location.reload();
+                } else {
+                    alert(`Erro: ${data.mensagem}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao atualizar valor. Tente novamente.');
+            });
+        }
+
+        // Imprimir extrato (implementação futura)
+        function imprimirExtrato() {
+            window.print();
+        }
+
+        // Exportar dados (implementação futura)
+        function exportarDados() {
+            alert('Funcionalidade de exportação será implementada em breve.');
+        }
+
+        // Auto-atualização opcional
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atualizar página a cada 5 minutos (opcional)
+            // setInterval(() => location.reload(), 300000);
+        });
+    </script>
+
+    <!-- Token para requisições AJAX -->
+    <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken()" />
+}
