@@ -326,18 +326,27 @@
 
         // Confirmar finalização
         function confirmarFinalizacao() {
+            // Obter token CSRF corretamente
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || 
+                         $('input[name="__RequestVerificationToken"]').val();
+
             const formData = new FormData();
-            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+            formData.append('__RequestVerificationToken', token);
 
             fetch(`/registro/finalizar/${registroParaFinalizar}`, {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.sucesso) {
                     alert(data.mensagem);
-                    location.reload();
+                    window.location.href = '/registro';
                 } else {
                     alert(`Erro: ${data.mensagem}`);
                 }
@@ -345,9 +354,13 @@
             .catch(error => {
                 console.error('Erro:', error);
                 alert('Erro ao finalizar registro. Tente novamente.');
+            })
+            .finally(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalFinalizar'));
+                if (modal) {
+                    modal.hide();
+                }
             });
-
-            bootstrap.Modal.getInstance(document.getElementById('modalFinalizar')).hide();
         }
 
         // Exportar dados (implementação futura)
@@ -357,17 +370,23 @@
 
         // Atualizar página
         function atualizarPagina() {
-            location.reload();
+            window.location.href = '/registro';
         }
 
-        // Auto-focus no campo de busca
+        // Auto-focus no campo de busca ao carregar
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('busca').focus();
+            const buscaInput = document.getElementById('busca');
+            if (buscaInput) {
+                // Pequeno delay para evitar interferência
+                setTimeout(() => {
+                    buscaInput.focus();
+                }, 100);
+            }
         });
     </script>
 }
 
 @{
-    // Token para requisições AJAX
-    <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken()" />
+    // Token CSRF para requisições AJAX
+    @Html.AntiForgeryToken()
 }
