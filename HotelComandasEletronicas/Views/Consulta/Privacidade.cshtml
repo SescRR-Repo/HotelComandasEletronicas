@@ -1,0 +1,382 @@
+﻿@{
+    ViewData["Title"] = "Política de Privacidade - Consulta de Extrato";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-cliente mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-shield-alt me-3"></i>
+                Política de Privacidade
+            </h2>
+            <p class="mb-0 fs-5">Como protegemos suas informações pessoais</p>
+            <small class="text-muted">Última atualização: @DateTime.Now.ToString("dd/MM/yyyy")</small>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Introdução -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Sobre Esta Política
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    O Hotel Comandas Eletrônicas está comprometido com a proteção de sua privacidade e 
+                    segurança dos seus dados pessoais.
+                </p>
+                <p>
+                    Esta política explica como coletamos, usamos, armazenamos e protegemos suas informações 
+                    quando você utiliza nosso sistema de consulta de extrato.
+                </p>
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Resumo:</strong> Seus dados são utilizados apenas para fornecer os serviços 
+                    solicitados e são protegidos com as melhores práticas de segurança.
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados Coletados -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-database me-2"></i>
+                    Dados Que Coletamos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user me-2 text-primary"></i>Dados de Identificação</h6>
+                        <ul>
+                            <li>Nome completo</li>
+                            <li>Número de telefone</li>
+                            <li>Número do quarto</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-receipt me-2 text-success"></i>Dados de Consumo</h6>
+                        <ul>
+                            <li>Produtos consumidos</li>
+                            <li>Valores gastos</li>
+                            <li>Datas e horários</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Importante:</strong> Coletamos apenas os dados necessários para fornecer 
+                    o serviço de hospedagem e consulta de extrato.
+                </div>
+            </div>
+        </div>
+
+        <!-- Como Usamos -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    Como Usamos Seus Dados
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Finalidades do uso dos dados:</h6>
+                        <ul>
+                            <li><strong>Prestação de serviços:</strong> Controle de hospedagem e consumos</li>
+                            <li><strong>Consulta de extrato:</strong> Permitir que você visualize seus gastos</li>
+                            <li><strong>Faturamento:</strong> Cálculo correto dos valores a serem cobrados</li>
+                            <li><strong>Suporte ao cliente:</strong> Resolução de dúvidas e problemas</li>
+                            <li><strong>Segurança:</strong> Prevenção de acessos não autorizados</li>
+                        </ul>
+
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Garantia:</strong> Seus dados nunca são vendidos, alugados ou 
+                            compartilhados com terceiros para fins comerciais.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proteção de Dados -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-lock me-2"></i>
+                    Como Protegemos Seus Dados
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-shield-alt me-2 text-success"></i>Medidas Técnicas</h6>
+                        <ul>
+                            <li>Conexões criptografadas (HTTPS)</li>
+                            <li>Banco de dados seguro</li>
+                            <li>Senhas criptografadas</li>
+                            <li>Backups regulares</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-users-cog me-2 text-info"></i>Medidas Administrativas</h6>
+                        <ul>
+                            <li>Acesso restrito aos dados</li>
+                            <li>Treinamento da equipe</li>
+                            <li>Políticas de segurança</li>
+                            <li>Auditoria de acessos</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Consulta segura:</strong> O sistema de consulta usa validação dupla 
+                    (nome + telefone) ou número do quarto para evitar acessos não autorizados.
+                </div>
+            </div>
+        </div>
+
+        <!-- Seus Direitos -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-balance-scale me-2"></i>
+                    Seus Direitos
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Você tem os seguintes direitos em relação aos seus dados pessoais:</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-eye me-2 text-primary"></i>Direito de Acesso</h6>
+                        <p class="small">Consultar quais dados possuímos sobre você</p>
+                        
+                        <h6><i class="fas fa-edit me-2 text-warning"></i>Direito de Correção</h6>
+                        <p class="small">Solicitar correção de dados incorretos</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-trash me-2 text-danger"></i>Direito de Exclusão</h6>
+                        <p class="small">Solicitar exclusão dos seus dados</p>
+                        
+                        <h6><i class="fas fa-ban me-2 text-secondary"></i>Direito de Oposição</h6>
+                        <p class="small">Se opor ao processamento dos dados</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-primary">
+                    <i class="fas fa-phone me-2"></i>
+                    <strong>Para exercer seus direitos:</strong> Entre em contato com a recepção 
+                    ou gerência do hotel.
+                </div>
+            </div>
+        </div>
+
+        <!-- Retenção de Dados -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Retenção de Dados
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tipo de Dado</th>
+                                <th>Período de Retenção</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Dados de hospedagem</td>
+                                <td>5 anos</td>
+                                <td>Obrigações fiscais e contábeis</td>
+                            </tr>
+                            <tr>
+                                <td>Dados de consumo</td>
+                                <td>5 anos</td>
+                                <td>Controle financeiro e auditoria</td>
+                            </tr>
+                            <tr>
+                                <td>Logs de acesso</td>
+                                <td>30 dias</td>
+                                <td>Segurança e troubleshooting</td>
+                            </tr>
+                            <tr>
+                                <td>Dados para marketing</td>
+                                <td>Não coletamos</td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contato -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-envelope me-2"></i>
+                    Contato e Dúvidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    Se você tiver dúvidas sobre esta política de privacidade ou sobre como 
+                    tratamos seus dados, entre em contato conosco:
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-building me-2"></i>Hotel Comandas Eletrônicas</h6>
+                        <p class="small">
+                            <strong>Endereço:</strong> Instância Ecológica do Tepequém<br>
+                            <strong>Telefone:</strong> (95) 99999-9999<br>
+                            <strong>Email:</strong> privacidade@hotelcomandas.com
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user-tie me-2"></i>Encarregado de Dados</h6>
+                        <p class="small">
+                            <strong>Nome:</strong> Gerência do Hotel<br>
+                            <strong>Telefone:</strong> Ramal 200<br>
+                            <strong>Email:</strong> gerencia@hotelcomandas.com
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Certificações de Segurança
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-shield-alt text-success me-2"></i>
+                        Conexão SSL/TLS segura
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-lock text-success me-2"></i>
+                        Dados criptografados
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-user-shield text-success me-2"></i>
+                        Acesso controlado
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-backup text-success me-2"></i>
+                        Backup diário
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Perguntas Frequentes
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="faqPrivacidade">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Meus dados são compartilhados?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqPrivacidade">
+                            <div class="accordion-body">
+                                <small>
+                                    Não. Seus dados são utilizados apenas internamente para 
+                                    prestação dos serviços hoteleiros.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Posso solicitar a exclusão?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqPrivacidade">
+                            <div class="accordion-body">
+                                <small>
+                                    Sim, mas alguns dados podem precisar ser mantidos por 
+                                    obrigações legais (5 anos para fins fiscais).
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                A consulta é segura?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqPrivacidade">
+                            <div class="accordion-body">
+                                <small>
+                                    Sim. Utilizamos validação dupla e conexão criptografada 
+                                    para proteger suas informações.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Atualizações
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small">
+                    Esta política pode ser atualizada periodicamente. 
+                    Recomendamos consultar regularmente.
+                </p>
+                <p class="small">
+                    <strong>Última atualização:</strong> @DateTime.Now.ToString("dd/MM/yyyy")
+                </p>
+                <div class="d-grid">
+                    <a href="@Url.Action("Index")" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Voltar à Consulta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,278 @@
+﻿@{
+    ViewData["Title"] = "Como Usar - Consulta de Extrato";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-cliente mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-question-circle me-3"></i>
+                Como Usar a Consulta de Extrato
+            </h2>
+            <p class="mb-0 fs-5">Guia completo para consultar seus consumos</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Métodos de Consulta -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2"></i>
+                    Métodos de Consulta
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <h6><i class="fas fa-door-open me-2 text-primary"></i>Por Número do Quarto</h6>
+                        <ul>
+                            <li><strong>Mais rápido:</strong> Digite apenas o número do quarto</li>
+                            <li><strong>Exemplos:</strong> 101, 205, Chalé 3</li>
+                            <li><strong>Quando usar:</strong> Se você tem certeza do número</li>
+                        </ul>
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-lightbulb me-1"></i>
+                            Digite exatamente como está na chave do quarto</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <h6><i class="fas fa-user-shield me-2 text-success"></i>Por Nome + Telefone</h6>
+                        <ul>
+                            <li><strong>Mais seguro:</strong> Validação dupla</li>
+                            <li><strong>Dados:</strong> Nome completo + telefone</li>
+                            <li><strong>Quando usar:</strong> Para maior segurança</li>
+                        </ul>
+                        <div class="alert alert-success">
+                            <small><i class="fas fa-shield-alt me-1"></i>
+                            Use os mesmos dados do check-in</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passo a Passo -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-ol me-2"></i>
+                    Passo a Passo
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="step-container">
+                            <div class="d-flex mb-3">
+                                <div class="step-number bg-primary text-white">1</div>
+                                <div class="ms-3">
+                                    <h6>Acesse a Página de Consulta</h6>
+                                    <p class="mb-0">Entre no site e clique em "Consultar Extrato" ou vá direto para <code>/consulta</code></p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex mb-3">
+                                <div class="step-number bg-primary text-white">2</div>
+                                <div class="ms-3">
+                                    <h6>Escolha o Método</h6>
+                                    <p class="mb-0">Selecione "Por Quarto" (mais rápido) ou "Por Nome + Telefone" (mais seguro)</p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex mb-3">
+                                <div class="step-number bg-primary text-white">3</div>
+                                <div class="ms-3">
+                                    <h6>Preencha os Dados</h6>
+                                    <p class="mb-0">Digite os dados solicitados com atenção aos detalhes</p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex mb-3">
+                                <div class="step-number bg-success text-white">4</div>
+                                <div class="ms-3">
+                                    <h6>Visualize o Resultado</h6>
+                                    <p class="mb-0">Veja o resumo e clique em "Ver Extrato Detalhado" se houver consumos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Problemas Comuns -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Problemas Comuns e Soluções
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="problemas">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problema1">
+                                "Quarto não encontrado"
+                            </button>
+                        </h2>
+                        <div id="problema1" class="accordion-collapse collapse" data-bs-parent="#problemas">
+                            <div class="accordion-body">
+                                <strong>Possíveis causas:</strong>
+                                <ul>
+                                    <li>Número digitado incorretamente</li>
+                                    <li>Check-out já realizado</li>
+                                    <li>Quarto ainda não teve check-in</li>
+                                </ul>
+                                <strong>Soluções:</strong>
+                                <ul>
+                                    <li>Verifique na chave ou cartão do quarto</li>
+                                    <li>Tente o método Nome + Telefone</li>
+                                    <li>Procure a recepção se persistir</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problema2">
+                                "Dados não conferem"
+                            </button>
+                        </h2>
+                        <div id="problema2" class="accordion-collapse collapse" data-bs-parent="#problemas">
+                            <div class="accordion-body">
+                                <strong>Possíveis causas:</strong>
+                                <ul>
+                                    <li>Nome digitado diferente do cadastro</li>
+                                    <li>Telefone com formatação diferente</li>
+                                    <li>Dados alterados após check-in</li>
+                                </ul>
+                                <strong>Soluções:</strong>
+                                <ul>
+                                    <li>Use o nome completo exato</li>
+                                    <li>Tente sem máscara: só números</li>
+                                    <li>Verifique se houve alteração de dados</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problema3">
+                                "Sem consumos para exibir"
+                            </button>
+                        </h2>
+                        <div id="problema3" class="accordion-collapse collapse" data-bs-parent="#problemas">
+                            <div class="accordion-body">
+                                <strong>Isso é normal quando:</strong>
+                                <ul>
+                                    <li>Você ainda não fez pedidos</li>
+                                    <li>Pedidos ainda não foram lançados</li>
+                                    <li>Check-in muito recente</li>
+                                </ul>
+                                <strong>O que fazer:</strong>
+                                <ul>
+                                    <li>Aguarde os lançamentos serem processados</li>
+                                    <li>Consulte novamente mais tarde</li>
+                                    <li>Verifique com o garçom se há pedidos pendentes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar com Links Rápidos -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-rocket me-2"></i>
+                    Acesso Rápido
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="@Url.Action("Index")" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>
+                        Fazer Consulta
+                    </a>
+                    <a href="/" class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>
+                        Página Inicial
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Dicas Importantes
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Os dados são atualizados em tempo real
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Você pode consultar quantas vezes quiser
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        O extrato pode ser impresso
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Não é necessário fazer login
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-phone me-2"></i>
+                    Precisa de Ajuda?
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Se ainda tiver dúvidas, entre em contato:</p>
+                <ul class="list-unstyled">
+                    <li><strong>Recepção:</strong> Ramal 100</li>
+                    <li><strong>Gerência:</strong> Ramal 200</li>
+                    <li><strong>WhatsApp:</strong> (95) 99999-9999</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+    </style>
+}

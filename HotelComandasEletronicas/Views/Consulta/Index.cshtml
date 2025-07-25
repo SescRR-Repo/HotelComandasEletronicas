@@ -1,0 +1,390 @@
+﻿@model HotelComandasEletronicas.ViewModels.ConsultaViewModel
+@{
+    ViewData["Title"] = "Consulta de Extrato - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-cliente mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-search me-3"></i>
+                Consulta de Extrato
+            </h2>
+            <p class="mb-0 fs-5">Consulte seus consumos de forma rápida e segura</p>
+            <small class="text-muted">Acesso público - Sem necessidade de login</small>
+        </div>
+    </div>
+</div>
+
+<!-- Informações de Uso -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Como Consultar Seu Extrato
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-door-open me-2 text-primary"></i>Por Número do Quarto</h6>
+                        <ul class="mb-3">
+                            <li>Digite apenas o número do seu quarto</li>
+                            <li>Ex: 101, 205, Chalé 3</li>
+                            <li><strong>Mais rápido e simples</strong></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user-shield me-2 text-success"></i>Por Nome + Telefone</h6>
+                        <ul class="mb-3">
+                            <li>Digite seu nome completo</li>
+                            <li>Digite seu telefone de cadastro</li>
+                            <li><strong>Mais seguro</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    <strong>Privacidade:</strong> Seus dados são protegidos. Apenas você pode acessar seu extrato.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário de Consulta -->
+<div class="row mb-4">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2"></i>
+                    Realizar Consulta
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrWhiteSpace(Model.MensagemErro))
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        @Model.MensagemErro
+                    </div>
+                }
+
+                <form method="post" asp-action="Index" class="needs-validation" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <!-- Seleção do Método de Consulta -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Escolha o método de consulta:</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="MetodoConsulta" 
+                                           id="metodoQuarto" value="Quarto" 
+                                           @(Model.IsConsultaPorQuarto ? "checked" : "") 
+                                           onchange="alterarMetodoConsulta()">
+                                    <label class="form-check-label" for="metodoQuarto">
+                                        <i class="fas fa-door-open me-2 text-primary"></i>
+                                        <strong>Por Número do Quarto</strong>
+                                        <br><small class="text-muted">Mais rápido</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="MetodoConsulta" 
+                                           id="metodoNomeTelefone" value="NomeTelefone" 
+                                           @(Model.IsConsultaPorNomeTelefone ? "checked" : "") 
+                                           onchange="alterarMetodoConsulta()">
+                                    <label class="form-check-label" for="metodoNomeTelefone">
+                                        <i class="fas fa-user-shield me-2 text-success"></i>
+                                        <strong>Por Nome + Telefone</strong>
+                                        <br><small class="text-muted">Mais seguro</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consulta por Quarto -->
+                    <div id="consultaQuarto" style="display: @(Model.IsConsultaPorQuarto ? "block" : "none")">
+                        <div class="mb-3">
+                            <label for="numeroQuarto" class="form-label">
+                                <i class="fas fa-door-open me-2"></i>
+                                Número do Quarto
+                            </label>
+                            <input type="text" id="numeroQuarto" name="NumeroQuarto" 
+                                   class="form-control form-control-lg text-center" 
+                                   placeholder="Ex: 101, 205, Chalé 3..." 
+                                   value="@Model.NumeroQuarto"
+                                   maxlength="20" />
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Digite exatamente como está na sua chave ou cartão do quarto
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consulta por Nome + Telefone -->
+                    <div id="consultaNomeTelefone" style="display: @(Model.IsConsultaPorNomeTelefone ? "block" : "none")">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="nome" class="form-label">
+                                    <i class="fas fa-user me-2"></i>
+                                    Nome Completo
+                                </label>
+                                <input type="text" id="nome" name="Nome" 
+                                       class="form-control form-control-lg" 
+                                       placeholder="Ex: João Silva..." 
+                                       value="@Model.Nome"
+                                       maxlength="100" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="telefone" class="form-label">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Telefone de Cadastro
+                                </label>
+                                <input type="tel" id="telefone" name="Telefone" 
+                                       class="form-control form-control-lg" 
+                                       placeholder="(95) 99999-1234" 
+                                       value="@Model.Telefone"
+                                       maxlength="20" />
+                                <div class="form-text">
+                                    Use o mesmo telefone informado no check-in
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Consulta -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search me-2"></i>
+                            Consultar Extrato
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultado da Consulta -->
+@if (Model.ConsultaRealizada && Model.ResultadoEncontrado && Model.Resultado != null)
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Extrato Encontrado
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Informações do Hóspede -->
+                        <div class="col-lg-6 mb-4">
+                            <h6><i class="fas fa-user me-2 text-primary"></i>Dados da Hospedagem</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Hóspede:</strong></td>
+                                    <td>@Model.Resultado.NomeCliente</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quarto:</strong></td>
+                                    <td><span class="badge bg-primary fs-6">@Model.Resultado.NumeroQuarto</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Check-in:</strong></td>
+                                    <td>@Model.Resultado.DataCheckInFormatada</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tempo:</strong></td>
+                                    <td>@Model.Resultado.TempoHospedagem</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Telefone:</strong></td>
+                                    <td><code>@Model.Resultado.TelefoneCliente</code></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Resumo Financeiro -->
+                        <div class="col-lg-6 mb-4">
+                            <h6><i class="fas fa-dollar-sign me-2 text-success"></i>Resumo Financeiro</h6>
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h3 class="text-success mb-3">@Model.Resultado.ValorTotalFormatado</h3>
+                                    <p class="mb-2"><strong>Total Gasto Atual</strong></p>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <h5 class="text-info">@Model.Resultado.TotalItensConsumidos</h5>
+                                            <small>Itens Consumidos</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <h5 class="text-warning">@Model.Resultado.DiasHospedado</h5>
+                                            <small>Dias Hospedado</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status do Consumo -->
+                    @if (Model.Resultado.TemConsumo)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Você possui @Model.Resultado.TotalItensConsumidos item(s) consumido(s).</strong>
+                            Clique abaixo para ver o extrato detalhado.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Você ainda não possui consumos registrados.</strong>
+                            Quando fizer pedidos, eles aparecerão aqui automaticamente.
+                        </div>
+                    }
+
+                    <!-- Ações Disponíveis -->
+                    <div class="row">
+                        <div class="col-lg-6 mb-2">
+                            @if (Model.Resultado.TemConsumo)
+                            {
+                                <a href="@Url.Action("Extrato", new { id = Model.Resultado.RegistroId })" 
+                                   class="btn btn-success w-100">
+                                    <i class="fas fa-receipt me-2"></i>
+                                    Ver Extrato Detalhado
+                                </a>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary w-100" disabled>
+                                    <i class="fas fa-receipt me-2"></i>
+                                    Sem Consumos para Exibir
+                                </button>
+                            }
+                        </div>
+                        <div class="col-lg-6 mb-2">
+                            <button type="button" class="btn btn-outline-primary w-100" onclick="novaConsulta()">
+                                <i class="fas fa-search me-2"></i>
+                                Nova Consulta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Links Úteis -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-light">
+            <div class="card-body text-center">
+                <h6 class="card-title">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Precisa de Ajuda?
+                </h6>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="@Url.Action("Ajuda")" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-question me-1"></i>Como Usar
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="@Url.Action("Privacidade")" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-shield-alt me-1"></i>Privacidade
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="/" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-home me-1"></i>Página Inicial
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Alternar método de consulta
+        function alterarMetodoConsulta() {
+            const metodoQuarto = document.getElementById('metodoQuarto').checked;
+            const metodoNomeTelefone = document.getElementById('metodoNomeTelefone').checked;
+            
+            document.getElementById('consultaQuarto').style.display = metodoQuarto ? 'block' : 'none';
+            document.getElementById('consultaNomeTelefone').style.display = metodoNomeTelefone ? 'block' : 'none';
+            
+            // Limpar campos do método não selecionado
+            if (metodoQuarto) {
+                document.getElementById('nome').value = '';
+                document.getElementById('telefone').value = '';
+            } else if (metodoNomeTelefone) {
+                document.getElementById('numeroQuarto').value = '';
+            }
+        }
+
+        // Nova consulta
+        function novaConsulta() {
+            window.location.href = '@Url.Action("Index")';
+        }
+
+        // Máscara de telefone
+        document.addEventListener('DOMContentLoaded', function() {
+            const telefoneInput = document.getElementById('telefone');
+            if (telefoneInput) {
+                telefoneInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length >= 11) {
+                        value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                    } else if (value.length >= 10) {
+                        value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+                    } else if (value.length >= 6) {
+                        value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+                    } else if (value.length >= 2) {
+                        value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+                    }
+                    e.target.value = value;
+                });
+            }
+
+            // Auto-focus baseado no método selecionado
+            const metodoQuarto = document.getElementById('metodoQuarto').checked;
+            if (metodoQuarto) {
+                document.getElementById('numeroQuarto').focus();
+            } else {
+                document.getElementById('nome').focus();
+            }
+        });
+
+        // Validação de formulário Bootstrap
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}

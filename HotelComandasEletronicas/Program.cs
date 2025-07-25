@@ -19,7 +19,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // ===================================
-// ?? CONFIGURAÇÃO DO BANCO DE DADOS OTIMIZADA
+// ??? CONFIGURAÇÃO DO BANCO DE DADOS OTIMIZADA
 // ===================================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Server=.\\SQLEXPRESS;Database=HotelComandasDB;Trusted_Connection=true;TrustServerCertificate=true;";
@@ -35,13 +35,13 @@ builder.Services.AddDbContext<ComandasDbContext>(options =>
 });
 
 // ===================================
-// ?? SERVICES ESSENCIAIS
+// ?? SERVICES ESSENCIAIS + CONSULTA
 // ===================================
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
 builder.Services.AddScoped<IRegistroHospedeService, RegistroHospedeService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
-builder.Services.AddScoped<IConsultaClienteService, ConsultaClienteService>();
+builder.Services.AddScoped<IConsultaService, ConsultaService>(); //  NOVO SERVIÇO
 // builder.Services.AddScoped<IRelatorioService, RelatorioService>(); // TEMPORARIAMENTE COMENTADO
 
 // ===================================
@@ -104,7 +104,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // ===================================
-// ??? ROTAS
+// ??? ROTAS ATUALIZADAS
 // ===================================
 app.MapControllerRoute(
     name: "default",
@@ -118,15 +118,15 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "consulta",
     pattern: "consulta/{action=Index}/{id?}",
-    defaults: new { controller = "ConsultaCliente" });
+    defaults: new { controller = "Consulta" }); // ? NOVA ROTA
 
 app.MapControllerRoute(
     name: "registro",
     pattern: "registro/{action=Index}/{id?}",
-    defaults: new { controller = "Registro" }); // Era "RegistroHospede"
+    defaults: new { controller = "Registro" });
 
 // ===================================
-// ?? INICIALIZAÇÃO DO BANCO OTIMIZADA
+// ??? INICIALIZAÇÃO DO BANCO OTIMIZADA
 // ===================================
 using (var scope = app.Services.CreateScope())
 {
@@ -135,19 +135,20 @@ using (var scope = app.Services.CreateScope())
         var context = scope.ServiceProvider.GetRequiredService<ComandasDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-        logger.LogInformation("?? Iniciando Hotel Comandas Eletrônicas v2.0 - OTIMIZADO");
+        logger.LogInformation("?? Iniciando Hotel Comandas Eletrônicas v2.1 - COM CONSULTA PÚBLICA");
 
         await context.Database.MigrateAsync();
-        logger.LogInformation("?? Migrations aplicadas");
+        logger.LogInformation("? Migrations aplicadas");
 
         context.PopularDadosIniciais();
-        logger.LogInformation("?? Dados iniciais populados");
+        logger.LogInformation("? Dados iniciais populados");
 
         var totalUsuarios = await context.Usuarios.CountAsync();
         var totalProdutos = await context.Produtos.CountAsync();
+        var totalHospedes = await context.RegistrosHospede.CountAsync();
 
-        logger.LogInformation("?? Sistema iniciado: {Usuarios} usuários, {Produtos} produtos",
-            totalUsuarios, totalProdutos);
+        logger.LogInformation("?? Sistema iniciado: {Usuarios} usuários, {Produtos} produtos, {Hospedes} hóspedes",
+            totalUsuarios, totalProdutos, totalHospedes);
     }
     catch (Exception ex)
     {
@@ -162,7 +163,7 @@ using (var scope = app.Services.CreateScope())
 // ===================================
 try
 {
-    Log.Information("?? Sistema Hotel Comandas OTIMIZADO iniciado!");
+    Log.Information("?? Sistema Hotel Comandas v2.1 iniciado! (COM CONSULTA PÚBLICA)");
     app.Run();
 }
 catch (Exception ex)

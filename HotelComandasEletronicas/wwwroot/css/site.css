@@ -549,4 +549,24 @@ input[type="number"] {
     75% {
         transform: translateX(5px);
     }
+
+}
+/* ===== IMPRESSÃO ===== */
+@media print {
+    .btn, .alert, .card-header, .perfil-header small {
+        display: none !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .table {
+        font-size: 12px;
+    }
+
+    h2, h5 {
+        color: #000 !important;
+    }
 }

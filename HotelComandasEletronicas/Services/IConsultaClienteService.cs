@@ -17,13 +17,4 @@ namespace HotelComandasEletronicas.Services
         // Métodos de validação
         Task<bool> ValidarDadosClienteAsync(string? quarto = null, string? nome = null, string? telefone = null);
     }
-
-    public class ExtratoCliente
-    {
-        public RegistroHospede Hospede { get; set; } = null!;
-        public List<LancamentoConsumo> Consumos { get; set; } = new();
-        public decimal TotalGasto { get; set; }
-        public DateTime UltimaAtualizacao { get; set; }
-        public int TotalItens { get; set; }
-    }
 }

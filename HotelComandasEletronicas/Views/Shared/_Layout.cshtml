@@ -21,7 +21,7 @@
             <div class="container-fluid">
                 <a class="navbar-brand" href="/">
                     <i class="fas fa-hotel me-2"></i>
-                    Hotel Comandas
+                    Hotel Comandas v2.1
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -30,10 +30,11 @@
 
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
-                        <!-- Links públicos -->
+                        <!-- Links públicos (destacados) -->
                         <li class="nav-item">
-                            <a class="nav-link" href="/consulta">
+                            <a class="nav-link fw-bold" href="/consulta">
                                 <i class="fas fa-search me-1"></i>
+                                <span class="badge bg-info ms-1">PÚBLICO</span>
                                 Consultar Extrato
                             </a>
                         </li>
@@ -92,6 +93,32 @@
                                 </ul>
                             </li>
                         }
+
+                        <!-- Link de Ajuda -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-question-circle me-1"></i>
+                                Ajuda
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="/consulta/ajuda">
+                                        <i class="fas fa-info-circle me-2"></i>Como Consultar
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/consulta/privacidade">
+                                        <i class="fas fa-shield-alt me-2"></i>Privacidade
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="/">
+                                        <i class="fas fa-home me-2"></i>Página Inicial
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
 
                     <ul class="navbar-nav">
@@ -102,6 +129,7 @@
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-user me-1"></i>
                                     @Context.Session.GetString("NomeUsuario")
+                                    <span class="badge bg-success ms-1">@Context.Session.GetString("PerfilUsuario")</span>
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li>
@@ -110,10 +138,19 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="/relatorios">
-                                            <i class="fas fa-chart-bar me-2"></i>Relatórios
+                                        <a class="dropdown-item" href="/lancamento/historico">
+                                            <i class="fas fa-history me-2"></i>Histórico
                                         </a>
                                     </li>
+                                    @if (ViewBag.UsuarioEhSupervisor == true)
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="/relatorios">
+                                                <i class="fas fa-chart-bar me-2"></i>Relatórios
+                                            </a>
+                                        </li>
+                                    }
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form asp-controller="Usuario" asp-action="Logout" method="post" style="display: inline;">
@@ -186,11 +223,16 @@
     <footer class="bg-dark text-light text-center py-3 mt-5">
         <div class="container">
             <p class="mb-0">
-                &copy; @DateTime.Now.Year - Hotel Comandas Eletrônicas v2.0
+                &copy; @DateTime.Now.Year - Hotel Comandas Eletrônicas v2.1
                 <span class="text-muted">| Tepequém</span>
+                <span class="badge bg-success ms-2">
+                    <i class="fas fa-check me-1"></i>Consulta Pública Ativa
+                </span>
             </p>
             <small class="text-muted">
-                Sistema local - Sem dependência de internet
+                Sistema local - Sem dependência de internet | 
+                <a href="/consulta" class="text-light">Consulte seu extrato</a> |
+                <a href="/consulta/ajuda" class="text-light">Ajuda</a>
             </small>
         </div>
     </footer>
@@ -232,6 +274,18 @@
                 e.target.value = value;
             });
         }
+
+        // Realçar link de consulta quando estiver na página
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            if (currentPath.startsWith('/consulta')) {
+                const consultaLink = document.querySelector('a[href="/consulta"]');
+                if (consultaLink) {
+                    consultaLink.classList.add('active');
+                    consultaLink.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                }
+            }
+        });
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

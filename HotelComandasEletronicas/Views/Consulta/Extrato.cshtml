@@ -1,0 +1,353 @@
+﻿@model HotelComandasEletronicas.ViewModels.ExtratoConsultaViewModel
+@{
+    ViewData["Title"] = $"Extrato - Quarto {Model.NumeroQuarto} - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-cliente mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-receipt me-3"></i>
+                Extrato Detalhado
+            </h2>
+            <p class="mb-0 fs-5">@Model.NomeCliente - Quarto @Model.NumeroQuarto</p>
+            <small class="text-muted">
+                Gerado em: @Model.DataGeracaoExtrato.ToString("dd/MM/yyyy HH:mm") | 
+                Check-in: @Model.DataCheckIn.ToString("dd/MM/yyyy HH:mm")
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo da Hospedagem -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Informações da Hospedagem
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <td><i class="fas fa-user me-2 text-primary"></i><strong>Hóspede:</strong></td>
+                                <td>@Model.NomeCliente</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-door-open me-2 text-primary"></i><strong>Quarto:</strong></td>
+                                <td><span class="badge bg-primary fs-6">@Model.NumeroQuarto</span></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-calendar-plus me-2 text-primary"></i><strong>Check-in:</strong></td>
+                                <td>@Model.DataCheckIn.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <td><i class="fas fa-clock me-2 text-warning"></i><strong>Dias:</strong></td>
+                                <td>@Model.DiasHospedado dia(s)</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-shopping-cart me-2 text-info"></i><strong>Itens:</strong></td>
+                                <td>@Model.TotalItens item(s)</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-history me-2 text-secondary"></i><strong>Último:</strong></td>
+                                <td>@Model.UltimoConsumoFormatado</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo Financeiro -->
+    <div class="col-lg-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white text-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-dollar-sign me-2"></i>
+                    Total Geral
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-success mb-3">@Model.ValorTotalFormatado</h2>
+                <p class="mb-2">Valor Total dos Consumos</p>
+                <hr>
+                <small>
+                    <strong>Média por item:</strong> @Model.MediaValorFormatada<br>
+                    <strong>Média por dia:</strong> 
+                    @((Model.DiasHospedado > 0 ? Model.ValorTotalGasto / Model.DiasHospedado : 0).ToString("C2"))
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Totais por Categoria -->
+@if (Model.TotalBebidas > 0 || Model.TotalComidas > 0 || Model.TotalServicos > 0)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Consumo por Categoria
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @if (Model.TotalBebidas > 0)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-info h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-glass-whiskey fa-2x text-info mb-2"></i>
+                                        <h5 class="card-title">Bebidas</h5>
+                                        <h4 class="text-info">@Model.TotalBebidasFormatado</h4>
+                                        <small class="text-muted">
+                                            @(Math.Round((Model.TotalBebidas / Model.ValorTotalGasto) * 100, 1))% do total
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.TotalComidas > 0)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-warning h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-utensils fa-2x text-warning mb-2"></i>
+                                        <h5 class="card-title">Comidas</h5>
+                                        <h4 class="text-warning">@Model.TotalComidasFormatado</h4>
+                                        <small class="text-muted">
+                                            @(Math.Round((Model.TotalComidas / Model.ValorTotalGasto) * 100, 1))% do total
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.TotalServicos > 0)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-success h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-concierge-bell fa-2x text-success mb-2"></i>
+                                        <h5 class="card-title">Serviços</h5>
+                                        <h4 class="text-success">@Model.TotalServicosFormatado</h4>
+                                        <small class="text-muted">
+                                            @(Math.Round((Model.TotalServicos / Model.ValorTotalGasto) * 100, 1))% do total
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Lista Detalhada de Consumos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-alt me-2"></i>
+                    Detalhamento dos Consumos (@Model.TotalItens item(s))
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.TemConsumos)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-clock me-1"></i>Data/Hora</th>
+                                    <th><i class="fas fa-utensils me-1"></i>Produto</th>
+                                    <th><i class="fas fa-tags me-1"></i>Categoria</th>
+                                    <th class="text-center"><i class="fas fa-plus me-1"></i>Qtd</th>
+                                    <th class="text-end"><i class="fas fa-dollar-sign me-1"></i>Valor Unit.</th>
+                                    <th class="text-end"><i class="fas fa-calculator me-1"></i>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    decimal totalAcumulado = 0;
+                                    var consumosOrdenados = Model.Consumos.OrderByDescending(c => c.DataHoraLancamento);
+                                }
+                                @foreach (var consumo in consumosOrdenados)
+                                {
+                                    totalAcumulado += consumo.ValorTotal;
+                                    <tr>
+                                        <td>
+                                            <small>@consumo.DataHoraLancamento.ToString("dd/MM/yyyy")</small><br>
+                                            <small class="text-muted">@consumo.DataHoraLancamento.ToString("HH:mm")</small>
+                                        </td>
+                                        <td>
+                                            <strong>@consumo.Produto?.Descricao</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(consumo.Produto?.IsCategoria("Bebidas") == true ? "bg-info" : 
+                                                                consumo.Produto?.IsCategoria("Comidas") == true ? "bg-warning text-dark" : 
+                                                                "bg-success")">
+                                                <i class="@(consumo.Produto?.IsCategoria("Bebidas") == true ? "fas fa-glass-whiskey" : 
+                                                          consumo.Produto?.IsCategoria("Comidas") == true ? "fas fa-utensils" : 
+                                                          "fas fa-concierge-bell") me-1"></i>
+                                                @consumo.Produto?.Categoria
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">@consumo.Quantidade</span>
+                                        </td>
+                                        <td class="text-end">
+                                            @consumo.ValorUnitario.ToString("C2")
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-success">@consumo.ValorTotal.ToString("C2")</strong>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-primary">
+                                <tr>
+                                    <th colspan="5" class="text-end">
+                                        <i class="fas fa-calculator me-2"></i>TOTAL GERAL:
+                                    </th>
+                                    <th class="text-end">
+                                        <span class="fs-5 fw-bold text-success">@Model.ValorTotalFormatado</span>
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum consumo registrado</h5>
+                        <p class="text-muted">Você ainda não possui itens consumidos nesta hospedagem.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ações Disponíveis -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Ações Disponíveis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 mb-2">
+                        <a href="@Url.Action("Index")" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>
+                            Nova Consulta
+                        </a>
+                    </div>
+                    <div class="col-lg-3 mb-2">
+                        <button type="button" class="btn btn-info w-100" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i>
+                            Imprimir Extrato
+                        </button>
+                    </div>
+                    <div class="col-lg-3 mb-2">
+                        <button type="button" class="btn btn-success w-100" onclick="atualizarExtrato()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Atualizar Dados
+                        </button>
+                    </div>
+                    <div class="col-lg-3 mb-2">
+                        <a href="/" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-home me-2"></i>
+                            Página Inicial
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informações de Rodapé -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <i class="fas fa-shield-alt text-success me-2"></i>
+                    <strong>Seguro:</strong> Dados protegidos
+                </div>
+                <div class="col-md-4">
+                    <i class="fas fa-sync-alt text-info me-2"></i>
+                    <strong>Atualizado:</strong> Em tempo real
+                </div>
+                <div class="col-md-4">
+                    <i class="fas fa-clock text-warning me-2"></i>
+                    <strong>Gerado:</strong> @Model.DataGeracaoExtrato.ToString("HH:mm")
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Atualizar extrato
+        function atualizarExtrato() {
+            if (confirm('Deseja atualizar os dados do extrato?')) {
+                window.location.reload();
+            }
+        }
+
+        // Melhorar impressão
+        window.addEventListener('beforeprint', function() {
+            document.title = 'Extrato - @Model.NomeCliente - Quarto @Model.NumeroQuarto';
+        });
+
+        window.addEventListener('afterprint', function() {
+            document.title = '@ViewData["Title"]';
+        });
+
+        // Auto-atualização opcional (a cada 2 minutos)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostrar quando foi gerado
+            const tempoGeracao = new Date('@Model.DataGeracaoExtrato.ToString("yyyy-MM-ddTHH:mm:ss")');
+            const agora = new Date();
+            const minutosAtras = Math.floor((agora - tempoGeracao) / 60000);
+            
+            if (minutosAtras > 0) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>Extrato gerado há ${minutosAtras} minuto(s). 
+                    <a href="javascript:atualizarExtrato()" class="alert-link">Clique aqui para atualizar</a>.</small>
+                `;
+                document.querySelector('.row.mt-4').prepend(alertDiv);
+            }
+        });
+    </script>
+}
