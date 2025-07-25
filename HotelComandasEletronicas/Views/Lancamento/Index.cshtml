@@ -247,7 +247,13 @@
                            onkeyup="validarCodigoGarcom()" />
                     <div class="form-text">
                         <i class="fas fa-info-circle me-1"></i>
-                        Digite seu código pessoal de garçom. Ex: 18, 03, 15, etc.
+                        <strong> IMPORTANTE:</strong> Digite apenas seu código pessoal de garçom cadastrado no sistema. Ex: 18, 03, 15, etc.
+                    </div>
+                    <div class="alert alert-warning mt-2">
+                        <small>
+                            <i class="fas fa-shield-alt me-1"></i>
+                            <strong>Sistema de Segurança:</strong> Apenas códigos válidos cadastrados pela gerência serão aceitos.
+                        </small>
                     </div>
                 </div>
 
@@ -668,19 +674,35 @@
             .then(data => {
                 if (data.sucesso) {
                     // Sucesso!
-                    alert(`COMANDA EFETIVADA!\n\n` +
-                          `Cliente: ${data.nomeCliente}\n` +
-                          `Quarto: ${data.numeroQuarto}\n` +
-                          `Pedidos processados: ${data.totalItens}\n` +
-                          `Valor total: ${data.valorTotal}\n` +
-                          `Garçom: ${data.codigoGarcom}\n\n` +
-                          `Comanda finalizada com sucesso!`);
+                    const mensagemSucesso = data.nomeGarcom ? 
+                        `COMANDA EFETIVADA!\n\n` +
+                        `Cliente: ${data.nomeCliente}\n` +
+                        `Quarto: ${data.numeroQuarto}\n` +
+                        `Pedidos processados: ${data.totalItens}\n` +
+                        `Valor total: ${data.valorTotal}\n` +
+                        `Garçom: ${data.nomeGarcom} (${data.codigoGarcom})\n\n` +
+                        `Comanda finalizada com sucesso!`
+                        :
+                        `COMANDA EFETIVADA!\n\n` +
+                        `Cliente: ${data.nomeCliente}\n` +
+                        `Quarto: ${data.numeroQuarto}\n` +
+                        `Pedidos processados: ${data.totalItens}\n` +
+                        `Valor total: ${data.valorTotal}\n` +
+                        `Garçom: ${data.codigoGarcom}\n\n` +
+                        `Comanda finalizada com sucesso!`;
+                    
+                    alert(mensagemSucesso);
                     
                     // Fechar modal e limpar tudo
                     bootstrap.Modal.getInstance(document.getElementById('modalConfirmacao')).hide();
                     limparComanda();
                 } else {
-                    alert(`Erro: ${data.mensagem}`);
+                    // MELHOR TRATAMENTO DE ERRO PARA CÓDIGO INVÁLIDO
+                    if (data.mensagem && data.mensagem.includes("não está cadastrado")) {
+                        alert(` CÓDIGO INVÁLIDO!\n\n${data.mensagem}\n\nVerifique:\n• Se digitou o código correto\n• Se você está cadastrado no sistema\n• Procure a recepção se necessário`);
+                    } else {
+                        alert(` ERRO: ${data.mensagem}`);
+                    }
                 }
             })
             .catch(error => {

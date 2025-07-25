@@ -21,7 +21,7 @@ namespace HotelComandasEletronicas.Services
         {
             try
             {
-                // Validações
+                // Validações básicas
                 if (lancamento.Quantidade <= 0)
                 {
                     _logger.LogWarning("Tentativa de lançamento com quantidade inválida: {Quantidade}", lancamento.Quantidade);
@@ -32,6 +32,20 @@ namespace HotelComandasEletronicas.Services
                 {
                     _logger.LogWarning("Tentativa de lançamento com valores inválidos");
                     return false;
+                }
+
+                // ✅ NOVA VALIDAÇÃO: Verificar se o código do usuário existe
+                if (!string.IsNullOrWhiteSpace(lancamento.CodigoUsuarioLancamento))
+                {
+                    var usuarioExiste = await _context.Usuarios
+                        .AnyAsync(u => u.CodigoID == lancamento.CodigoUsuarioLancamento && u.Status);
+                    
+                    if (!usuarioExiste)
+                    {
+                        _logger.LogWarning("Tentativa de lançamento com código de usuário inexistente: {CodigoUsuario}", 
+                            lancamento.CodigoUsuarioLancamento);
+                        return false;
+                    }
                 }
 
                 // Usar uma transação para todo o processo
@@ -69,8 +83,8 @@ namespace HotelComandasEletronicas.Services
                     // Commit da transação
                     await transaction.CommitAsync();
 
-                    _logger.LogInformation("Lançamento registrado com sucesso: ID {LancamentoID}, Produto {ProdutoID}, Valor {Valor}",
-                        lancamento.ID, lancamento.ProdutoID, lancamento.ValorTotal);
+                    _logger.LogInformation("Lançamento registrado com sucesso: ID {LancamentoID}, Produto {ProdutoID}, Usuário {CodigoUsuario}, Valor {Valor}",
+                        lancamento.ID, lancamento.ProdutoID, lancamento.CodigoUsuarioLancamento, lancamento.ValorTotal);
 
                     return true;
                 }

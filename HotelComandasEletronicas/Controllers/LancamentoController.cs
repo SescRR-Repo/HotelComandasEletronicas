@@ -10,17 +10,20 @@ namespace HotelComandasEletronicas.Controllers
         private readonly ILancamentoService _lancamentoService;
         private readonly IProdutoService _produtoService;
         private readonly IRegistroHospedeService _registroHospedeService;
+        private readonly IUsuarioService _usuarioService;
         private readonly ILogger<LancamentoController> _logger;
 
         public LancamentoController(
             ILancamentoService lancamentoService,
             IProdutoService produtoService,
             IRegistroHospedeService registroHospedeService,
+            IUsuarioService usuarioService,
             ILogger<LancamentoController> logger)
         {
             _lancamentoService = lancamentoService;
             _produtoService = produtoService;
             _registroHospedeService = registroHospedeService;
+            _usuarioService = usuarioService;
             _logger = logger;
         }
 
@@ -87,13 +90,26 @@ namespace HotelComandasEletronicas.Controllers
                     return Json(new { sucesso = false, mensagem = "Dados inválidos ou comanda vazia." });
                 }
 
-                // Validar código do garçom
+                // Validar c?digo do gar?om (FORMATO)
                 if (string.IsNullOrWhiteSpace(model.CodigoGarcom) || model.CodigoGarcom.Length != 2)
                 {
-                    return Json(new { sucesso = false, mensagem = "Código do garçom inválido." });
+                    return Json(new { sucesso = false, mensagem = "Código do garçom inválido. Deve ter 2 dígitos." });
                 }
 
-                // Buscar e validar hóspede
+                // ? NOVA VALIDAÇÃO: Verificar se o código do garçom existe no sistema
+                var usuarioValidacao = await _usuarioService.ValidarCodigoAsync(model.CodigoGarcom);
+
+                if (usuarioValidacao == null)
+                {
+                    _logger.LogWarning("Tentativa de usar código de garçom inexistente: {CodigoGarcom}", model.CodigoGarcom);
+                    return Json(new { sucesso = false, mensagem = $"Código '{model.CodigoGarcom}' não está cadastrado no sistema. Verifique com a recepção." });
+                }
+
+                // Log da validação bem-sucedida
+                _logger.LogInformation("Código do garçom validado: {CodigoGarcom} - {NomeUsuario} ({Perfil})", 
+                    model.CodigoGarcom, usuarioValidacao.Nome, usuarioValidacao.Perfil);
+
+                // Buscar e validar h?spede
                 var hospede = await _registroHospedeService.BuscarPorIdAsync(model.RegistroHospedeID);
                 if (hospede == null || !hospede.IsAtivo())
                 {
@@ -126,7 +142,7 @@ namespace HotelComandasEletronicas.Controllers
                         Status = "Ativo"
                     };
 
-                    // Registrar lançamento
+                    // Registrar lan?amento
                     var sucesso = await _lancamentoService.RegistrarConsumoAsync(lancamento);
                     if (!sucesso)
                     {
@@ -142,12 +158,12 @@ namespace HotelComandasEletronicas.Controllers
                 LogarAcao("ProcessarComanda", 
                     $"Comanda processada - Quarto: {hospede.NumeroQuarto} | " +
                     $"Itens: {lancamentosProcessados.Count} | Total: {valorTotalComanda:C} | " +
-                    $"Garçom: {model.CodigoGarcom} | " +
+                    $"Garçom: {model.CodigoGarcom} ({usuarioValidacao.Nome}) | " +
                     $"Pedidos: {string.Join(", ", lancamentosProcessados.Select(l => l.Produto?.Descricao ?? "N/A"))}",
                     "LANCAMENTOS_CONSUMO");
 
-                _logger.LogInformation("Comanda processada com sucesso - {Total} itens, valor: {Valor}", 
-                    lancamentosProcessados.Count, valorTotalComanda);
+                _logger.LogInformation("Comanda processada com sucesso - {Total} itens, valor: {Valor}, Garçom: {NomeGarcom}", 
+                    lancamentosProcessados.Count, valorTotalComanda, usuarioValidacao.Nome);
 
                 return Json(new { 
                     sucesso = true, 
@@ -156,7 +172,8 @@ namespace HotelComandasEletronicas.Controllers
                     valorTotal = valorTotalComanda.ToString("C2"),
                     numeroQuarto = hospede.NumeroQuarto,
                     nomeCliente = hospede.NomeCliente,
-                    codigoGarcom = model.CodigoGarcom
+                    codigoGarcom = model.CodigoGarcom,
+                    nomeGarcom = usuarioValidacao.Nome
                 });
             }
             catch (Exception ex)

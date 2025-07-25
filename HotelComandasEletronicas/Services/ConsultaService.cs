@@ -67,24 +67,32 @@ namespace HotelComandasEletronicas.Services
             try
             {
                 if (string.IsNullOrWhiteSpace(nome) || string.IsNullOrWhiteSpace(telefone))
+                {
+                    _logger.LogWarning("Consulta por nome e telefone com dados vazios");
                     return null;
+                }
 
-                // Limpar formatação do telefone
+                // Limpar formatação do telefone do usuário
                 var telefoneLimpo = Regex.Replace(telefone, @"[^\d]", "");
                 if (telefoneLimpo.Length < 8)
+                {
+                    _logger.LogWarning("Telefone muito curto após limpeza: {TelefoneLimpo}", telefoneLimpo);
                     return null;
+                }
 
-                var registro = await _context.RegistrosHospede
-                    .Include(r => r.Lancamentos)
-                    .ThenInclude(l => l.Produto)
-                    .Where(r => r.NomeCliente.Contains(nome) && 
-                               r.TelefoneCliente.Contains(telefoneLimpo) && 
-                               r.Status == "Ativo")
-                    .FirstOrDefaultAsync();
+                // Limpar nome (remover espaços extras)
+                var nomeLimpo = nome.Trim();
+
+                _logger.LogInformation("Buscando por nome: '{Nome}' e telefone: '{Telefone}' (limpo: '{TelefoneLimpo}')", 
+                    nomeLimpo, telefone, telefoneLimpo);
+
+                // Buscar com diferentes estratégias
+                var registro = await BuscarRegistroPorNomeTelefone(nomeLimpo, telefoneLimpo);
 
                 if (registro == null)
                 {
-                    _logger.LogWarning("Consulta por nome e telefone não encontrada: {Nome}, {Telefone}", nome, telefone);
+                    _logger.LogWarning("Consulta por nome e telefone não encontrada: Nome='{Nome}', TelefoneOriginal='{Telefone}', TelefoneLimpo='{TelefoneLimpo}'", 
+                        nomeLimpo, telefone, telefoneLimpo);
                     return null;
                 }
 
@@ -102,7 +110,8 @@ namespace HotelComandasEletronicas.Services
                     MetodoConsulta = "Nome + Telefone"
                 };
 
-                _logger.LogInformation("Consulta por nome e telefone realizada: {Nome}", nome);
+                _logger.LogInformation("Consulta por nome e telefone realizada com sucesso: {Nome} - Quarto {Quarto}", 
+                    registro.NomeCliente, registro.NumeroQuarto);
                 return resultado;
             }
             catch (Exception ex)
@@ -110,6 +119,86 @@ namespace HotelComandasEletronicas.Services
                 _logger.LogError(ex, "Erro ao consultar por nome e telefone: {Nome}", nome);
                 return null;
             }
+        }
+
+        private async Task<RegistroHospede?> BuscarRegistroPorNomeTelefone(string nome, string telefoneLimpo)
+        {
+            // Estratégia 1: Busca exata pelo nome e telefone limpo
+            var registro = await _context.RegistrosHospede
+                .Include(r => r.Lancamentos)
+                .ThenInclude(l => l.Produto)
+                .Where(r => r.NomeCliente.ToLower().Contains(nome.ToLower()) && 
+                           r.TelefoneCliente.Contains(telefoneLimpo) && 
+                           r.Status == "Ativo")
+                .FirstOrDefaultAsync();
+
+            if (registro != null)
+            {
+                _logger.LogInformation("Encontrado com estratégia 1 (nome parcial + telefone limpo)");
+                return registro;
+            }
+
+            // Estratégia 2: Busca com nome exato e telefone limpo
+            registro = await _context.RegistrosHospede
+                .Include(r => r.Lancamentos)
+                .ThenInclude(l => l.Produto)
+                .Where(r => r.NomeCliente.ToLower() == nome.ToLower() && 
+                           r.TelefoneCliente.Contains(telefoneLimpo) && 
+                           r.Status == "Ativo")
+                .FirstOrDefaultAsync();
+
+            if (registro != null)
+            {
+                _logger.LogInformation("Encontrado com estratégia 2 (nome exato + telefone limpo)");
+                return registro;
+            }
+
+            // Estratégia 3: Busca mais flexível - limpar telefone do banco também
+            var registros = await _context.RegistrosHospede
+                .Include(r => r.Lancamentos)
+                .ThenInclude(l => l.Produto)
+                .Where(r => r.Status == "Ativo")
+                .ToListAsync();
+
+            registro = registros.FirstOrDefault(r => 
+            {
+                var telefoneDbLimpo = Regex.Replace(r.TelefoneCliente, @"[^\d]", "");
+                var nomeMatch = r.NomeCliente.ToLower().Contains(nome.ToLower()) || 
+                               nome.ToLower().Contains(r.NomeCliente.ToLower());
+                var telefoneMatch = telefoneDbLimpo.Contains(telefoneLimpo) || 
+                                   telefoneLimpo.Contains(telefoneDbLimpo);
+                
+                return nomeMatch && telefoneMatch;
+            });
+
+            if (registro != null)
+            {
+                _logger.LogInformation("Encontrado com estratégia 3 (busca flexível em memória)");
+                return registro;
+            }
+
+            // Estratégia 4: Busca apenas pelos últimos dígitos do telefone
+            if (telefoneLimpo.Length >= 8)
+            {
+                var ultimosDigitos = telefoneLimpo.Substring(telefoneLimpo.Length - 8);
+                registro = await _context.RegistrosHospede
+                    .Include(r => r.Lancamentos)
+                    .ThenInclude(l => l.Produto)
+                    .Where(r => r.NomeCliente.ToLower().Contains(nome.ToLower()) && 
+                               r.TelefoneCliente.Contains(ultimosDigitos) && 
+                               r.Status == "Ativo")
+                    .FirstOrDefaultAsync();
+
+                if (registro != null)
+                {
+                    _logger.LogInformation("Encontrado com estratégia 4 (nome + últimos 8 dígitos do telefone)");
+                    return registro;
+                }
+            }
+
+            _logger.LogWarning("Nenhuma estratégia de busca encontrou resultado para: Nome='{Nome}', Telefone='{Telefone}'", 
+                nome, telefoneLimpo);
+            return null;
         }
 
         #endregion
