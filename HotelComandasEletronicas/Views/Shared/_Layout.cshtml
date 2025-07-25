@@ -21,7 +21,7 @@
             <div class="container-fluid">
                 <a class="navbar-brand" href="/">
                     <i class="fas fa-hotel me-2"></i>
-                    Hotel Comandas v2.1
+                    Hotel Comandas v2.0
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -37,13 +37,6 @@
                                 Consultar Extrato
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/lancamento">
-                                <i class="fas fa-plus-circle me-1"></i>
-                                Lançar Consumo
-                            </a>
-                        </li>
-
                         <!-- Links restritos (apenas usuários logados) -->
                         @if (Context.Session.GetString("UsuarioLogado") != null)
                         {
@@ -110,12 +103,6 @@
                                         <i class="fas fa-shield-alt me-2"></i>Privacidade
                                     </a>
                                 </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="/">
-                                        <i class="fas fa-home me-2"></i>Página Inicial
-                                    </a>
-                                </li>
                             </ul>
                         </li>
                     </ul>
@@ -158,15 +145,6 @@
                                         </form>
                                     </li>
                                 </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" href="/usuario/login">
-                                    <i class="fas fa-sign-in-alt me-1"></i>
-                                    Login
-                                </a>
                             </li>
                         }
                     </ul>
@@ -220,16 +198,36 @@
     <!-- Footer -->
     <footer class="bg-dark text-light text-center py-3 mt-5">
         <div class="container">
-            <p class="mb-0">
-                &copy; @DateTime.Now.Year - Hotel Comandas Eletrônicas v2.1
-                <span class="text-muted">| Tepequém</span>
-                    <i class="fas fa-check me-1"></i>Consulta Pública Ativa
+            <p class="mb-1">
+                Desenvolvido pela ATI SESC RORAIMA &copy; @DateTime.Now.Year - Hotel Comandas Eletrônicas v2.0
+                | Tepequém
             </p>
-            <small class="text-muted">
-                Sistema local - Sem dependência de internet | 
-                <a href="/consulta" class="text-light">Consulte seu extrato</a> |
-                <a href="/consulta/ajuda" class="text-light">Ajuda</a>
-            </small>
+            <div class="row">
+                <div class="col-md-10">
+                    <small class="text-light">
+                        Sistema local - Sem dependência de internet | 
+                        <a href="/consulta" class="text-light">Consulte seu extrato</a> |
+                        <a href="/consulta/ajuda" class="text-light">Ajuda</a>
+                    </small>
+                </div>
+                <div class="col-md-2 text-end">
+                    @if (Context.Session.GetString("UsuarioLogado") == null)
+                    {
+                        <small>
+                            <a href="/usuario/login" class="text-light text-decoration-none" style="font-size: 0.8rem;">
+                                <i class="fas fa-sign-in-alt me-1"></i>Acesso Funcionários
+                            </a>
+                        </small>
+                    }
+                    else
+                    {
+                        <small class="text-success">
+                            <i class="fas fa-user me-1"></i>
+                            Logado como: @Context.Session.GetString("NomeUsuario")
+                        </small>
+                    }
+                </div>
+            </div>
         </div>
     </footer>
 

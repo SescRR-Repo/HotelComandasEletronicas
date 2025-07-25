@@ -97,14 +97,14 @@ namespace HotelComandasEletronicas.Data
         {
             try
             {
-                Console.WriteLine("🏨 Iniciando população de dados iniciais...");
+                Console.WriteLine(" Iniciando população de dados iniciais...");
 
                 // ===================================
                 //  CRIAR USUÁRIOS INICIAIS
                 // ===================================
                 if (!Usuarios.Any())
                 {
-                    Console.WriteLine("👥 Criando usuários iniciais...");
+                    Console.WriteLine(" Criando usuários iniciais...");
 
                     var usuariosIniciais = new List<Usuario>
                     {
@@ -152,7 +152,7 @@ namespace HotelComandasEletronicas.Data
 
                     Usuarios.AddRange(usuariosIniciais);
                     SaveChanges();
-                    Console.WriteLine($"✅ {usuariosIniciais.Count} usuários criados!");
+                    Console.WriteLine($" {usuariosIniciais.Count} usuários criados!");
                 }
 
                 // ===================================
@@ -160,7 +160,7 @@ namespace HotelComandasEletronicas.Data
                 // ===================================
                 if (!Produtos.Any())
                 {
-                    Console.WriteLine("🍽️ Criando produtos iniciais...");
+                    Console.WriteLine(" Criando produtos iniciais...");
 
                     var produtosIniciais = new List<Produto>
                     {
@@ -185,7 +185,7 @@ namespace HotelComandasEletronicas.Data
 
                     Produtos.AddRange(produtosIniciais);
                     SaveChanges();
-                    Console.WriteLine($"✅ {produtosIniciais.Count} produtos criados!");
+                    Console.WriteLine($" {produtosIniciais.Count} produtos criados!");
                 }
 
                 // ===================================
@@ -193,7 +193,7 @@ namespace HotelComandasEletronicas.Data
                 // ===================================
                 if (!RegistrosHospede.Any())
                 {
-                    Console.WriteLine("🛏️ Criando hóspedes de teste...");
+                    Console.WriteLine(" Criando hóspedes de teste...");
 
                     var hospedesTest = new List<RegistroHospede>
                     {
@@ -221,7 +221,7 @@ namespace HotelComandasEletronicas.Data
 
                     RegistrosHospede.AddRange(hospedesTest);
                     SaveChanges();
-                    Console.WriteLine($"✅ {hospedesTest.Count} hóspedes de teste criados!");
+                    Console.WriteLine($" {hospedesTest.Count} hóspedes de teste criados!");
                 }
 
                 // REMOVIDO: Criação de LogSistema
@@ -238,22 +238,22 @@ namespace HotelComandasEletronicas.Data
                 };
 
                 Console.WriteLine("====================================");
-                Console.WriteLine("🎉 DADOS INICIAIS CONFIGURADOS:");
-                Console.WriteLine($"    👥 Usuários: {stats.TotalUsuarios}");
-                Console.WriteLine($"    🍽️ Produtos: {stats.TotalProdutos}");
-                Console.WriteLine($"    🛏️ Hóspedes: {stats.TotalHospedes}");
+                Console.WriteLine(" DADOS INICIAIS CONFIGURADOS:");
+                Console.WriteLine($"     Usuários: {stats.TotalUsuarios}");
+                Console.WriteLine($"     Produtos: {stats.TotalProdutos}");
+                Console.WriteLine($"     Hóspedes: {stats.TotalHospedes}");
                 Console.WriteLine("====================================");
-                Console.WriteLine("📋 Sistema pronto para uso!");
-                Console.WriteLine("🔐 Login Admin: admin / admin123");
-                Console.WriteLine("🔐 Login Maria: mariasilva01 / 123456");
-                Console.WriteLine("🔐 Login Ana: anacclara01 / 123456");
-                Console.WriteLine("🏷️ Código João: 18 (Garçom)");
+                Console.WriteLine(" Sistema pronto para uso!");
+                Console.WriteLine(" Login Admin: admin / admin123");
+                Console.WriteLine(" Login Maria: mariasilva01 / 123456");
+                Console.WriteLine(" Login Ana: anacclara01 / 123456");
+                Console.WriteLine(" Código João: 18 (Garçom)");
                 Console.WriteLine("====================================");
 
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Erro ao popular dados iniciais: {ex.Message}");
+                Console.WriteLine($" Erro ao popular dados iniciais: {ex.Message}");
                 throw;
             }
         }

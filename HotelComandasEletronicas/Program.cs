@@ -6,7 +6,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // ===================================
-// ?? CONFIGURAÇÃO OTIMIZADA DE LOGGING (APENAS ARQUIVOS)
+//  CONFIGURAÇÃO OTIMIZADA DE LOGGING (APENAS ARQUIVOS)
 // ===================================
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -19,7 +19,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // ===================================
-// ??? CONFIGURAÇÃO DO BANCO DE DADOS OTIMIZADA
+//  CONFIGURAÇÃO DO BANCO DE DADOS OTIMIZADA
 // ===================================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Server=.\\SQLEXPRESS;Database=HotelComandasDB;Trusted_Connection=true;TrustServerCertificate=true;";
@@ -35,7 +35,7 @@ builder.Services.AddDbContext<ComandasDbContext>(options =>
 });
 
 // ===================================
-// ?? SERVICES ESSENCIAIS + CONSULTA + RELATÓRIOS
+//  SERVICES ESSENCIAIS + CONSULTA + RELATÓRIOS
 // ===================================
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
@@ -45,7 +45,7 @@ builder.Services.AddScoped<IConsultaService, ConsultaService>(); // ? NOVO SERVI
 builder.Services.AddScoped<IRelatorioService, RelatorioService>(); // ? RELATÓRIOS ATIVADOS
 
 // ===================================
-// ?? CONFIGURAÇÃO WEB
+//  CONFIGURAÇÃO WEB
 // ===================================
 builder.Services.AddControllersWithViews();
 
@@ -72,7 +72,7 @@ builder.Services.AddResponseCompression(options =>
 builder.Services.AddHttpContextAccessor();
 
 // ===================================
-// ?? BUILD E CONFIGURAÇÃO
+//  BUILD E CONFIGURAÇÃO
 // ===================================
 var app = builder.Build();
 
@@ -104,7 +104,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // ===================================
-// ??? ROTAS ATUALIZADAS
+//  ROTAS ATUALIZADAS
 // ===================================
 app.MapControllerRoute(
     name: "default",
@@ -131,7 +131,7 @@ app.MapControllerRoute(
     defaults: new { controller = "Registro" });
 
 // ===================================
-// ??? INICIALIZAÇÃO DO BANCO OTIMIZADA
+//  INICIALIZAÇÃO DO BANCO OTIMIZADA
 // ===================================
 using (var scope = app.Services.CreateScope())
 {
@@ -140,40 +140,40 @@ using (var scope = app.Services.CreateScope())
         var context = scope.ServiceProvider.GetRequiredService<ComandasDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-        logger.LogInformation("?? Iniciando Hotel Comandas Eletrônicas v2.1 - COM CONSULTA PÚBLICA");
+        logger.LogInformation(" Iniciando Hotel Comandas Eletrônicas v2.0 - COM CONSULTA PÚBLICA");
 
         await context.Database.MigrateAsync();
-        logger.LogInformation("? Migrations aplicadas");
+        logger.LogInformation(" Migrations aplicadas");
 
         context.PopularDadosIniciais();
-        logger.LogInformation("? Dados iniciais populados");
+        logger.LogInformation(" Dados iniciais populados");
 
         var totalUsuarios = await context.Usuarios.CountAsync();
         var totalProdutos = await context.Produtos.CountAsync();
         var totalHospedes = await context.RegistrosHospede.CountAsync();
 
-        logger.LogInformation("?? Sistema iniciado: {Usuarios} usuários, {Produtos} produtos, {Hospedes} hóspedes",
+        logger.LogInformation(" Sistema iniciado: {Usuarios} usuários, {Produtos} produtos, {Hospedes} hóspedes",
             totalUsuarios, totalProdutos, totalHospedes);
     }
     catch (Exception ex)
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "? Erro na inicialização");
+        logger.LogError(ex, " Erro na inicialização");
         throw;
     }
 }
 
 // ===================================
-// ?? INICIAR APLICAÇÃO
+//  INICIAR APLICAÇÃO
 // ===================================
 try
 {
-    Log.Information("?? Sistema Hotel Comandas v2.1 iniciado! (COM CONSULTA PÚBLICA)");
+    Log.Information(" Sistema Hotel Comandas v2.1 iniciado! (COM CONSULTA PÚBLICA)");
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "?? Erro fatal na aplicação");
+    Log.Fatal(ex, " Erro fatal na aplicação");
 }
 finally
 {

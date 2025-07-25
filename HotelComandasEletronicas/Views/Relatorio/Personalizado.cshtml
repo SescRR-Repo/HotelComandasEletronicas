@@ -210,13 +210,13 @@
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="configurarRelatorio('vendas')">
-                        ?? Relatório de Vendas
+                        <i class="fas fa-chart-line me-1"></i>Relatório de Vendas
                     </button>
                     <button type="button" class="btn btn-outline-success btn-sm" onclick="configurarRelatorio('completo')">
-                        ?? Relatório Completo
+                        <i class="fas fa-clipboard-list me-1"></i>Relatório Completo
                     </button>
                     <button type="button" class="btn btn-outline-warning btn-sm" onclick="configurarRelatorio('performance')">
-                        ?? Performance dos Garçons
+                        <i class="fas fa-users me-1"></i>Performance dos Garçons
                     </button>
                 </div>
             </div>
@@ -244,7 +244,7 @@
                         <div class="mb-4">
                             <h6 class="text-success">
                                 <i class="fas fa-chart-line me-2"></i>
-                                ?? Resumo de Vendas
+                                Resumo de Vendas
                             </h6>
                             <div class="row">
                                 <div class="col-md-3">
@@ -289,7 +289,7 @@
                         <div class="mb-4">
                             <h6 class="text-info">
                                 <i class="fas fa-box me-2"></i>
-                                ?? Top 5 Produtos Mais Vendidos
+                                Top 5 Produtos Mais Vendidos
                             </h6>
                             <div class="table-responsive">
                                 <table class="table table-sm">
@@ -323,7 +323,7 @@
                         <div class="mb-4">
                             <h6 class="text-warning">
                                 <i class="fas fa-users me-2"></i>
-                                ?? Top 5 Usuários por Performance
+                                Top 5 Usuários por Performance
                             </h6>
                             <div class="table-responsive">
                                 <table class="table table-sm">
@@ -357,7 +357,7 @@
                         <div class="mb-4">
                             <h6 class="text-primary">
                                 <i class="fas fa-bed me-2"></i>
-                                ?? Resumo de Ocupação
+                                Resumo de Ocupação
                             </h6>
                             <p>Total de registros no período: <strong>@Model.Resultado.OcupacaoPorPeriodo.Sum(o => o.NovasReservas + o.ReservasAtivas + o.ReservasFinalizadas)</strong></p>
                         </div>
@@ -425,7 +425,7 @@
             const usuario = document.querySelector('input[name="UsuarioFiltro"]').value;
             const quarto = document.querySelector('input[name="QuartoFiltro"]').value;
             
-            let preview = '<h6>?? Configuração Atual:</h6>';
+            let preview = '<h6><i class="fas fa-clipboard-list me-2"></i>Configuração Atual:</h6>';
             
             if (titulo) {
                 preview += `<p><strong>Título:</strong> ${titulo}</p>`;
@@ -439,7 +439,7 @@
                 });
                 preview += '</ul>';
             } else {
-                preview += '<p class="text-warning">?? Nenhuma seção selecionada</p>';
+                preview += '<p class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Nenhuma seção selecionada</p>';
             }
             
             if (categoria || usuario || quarto) {
