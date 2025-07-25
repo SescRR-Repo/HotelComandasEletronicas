@@ -1,0 +1,483 @@
+@model HotelComandasEletronicas.ViewModels.RelatorioPersonalizadoViewModel
+@{
+    ViewData["Title"] = "Relatório Personalizado - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-cogs me-3"></i>
+                Relatório Personalizado
+            </h2>
+            <p class="mb-0 fs-5">Configure seu próprio relatório com os dados que você precisa</p>
+            <div class="mt-2">
+                <a href="/relatorio" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Resultado?.TemErro == true)
+{
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Erro ao gerar relatório:</strong> @Model.Resultado.ErroGeração
+    </div>
+}
+
+<!-- Configuração do Relatório -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-sliders-h me-2"></i>
+                    Configuração do Relatório
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="Personalizado">
+                    @Html.AntiForgeryToken()
+                    
+                    <!-- Período -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="DataInicio" class="form-label">
+                                <i class="fas fa-calendar me-2"></i>Data Início
+                            </label>
+                            <input asp-for="DataInicio" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DataFim" class="form-label">
+                                <i class="fas fa-calendar me-2"></i>Data Fim
+                            </label>
+                            <input asp-for="DataFim" type="date" class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Título Personalizado -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label asp-for="TituloPersonalizado" class="form-label">
+                                <i class="fas fa-heading me-2"></i>Título do Relatório (opcional)
+                            </label>
+                            <input asp-for="TituloPersonalizado" class="form-control" 
+                                   placeholder="Ex: Relatório de Performance Semanal..." />
+                        </div>
+                    </div>
+
+                    <!-- Seções a Incluir -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label">
+                                <i class="fas fa-list-check me-2"></i>Seções a Incluir no Relatório
+                            </label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IncluirVendas" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IncluirVendas" class="form-check-label">
+                                            <i class="fas fa-chart-line me-2 text-success"></i>
+                                            <strong>Análise de Vendas</strong>
+                                            <br><small class="text-muted">Resumo de vendas, ticket médio, crescimento</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IncluirProdutos" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IncluirProdutos" class="form-check-label">
+                                            <i class="fas fa-box me-2 text-info"></i>
+                                            <strong>Produtos Mais Vendidos</strong>
+                                            <br><small class="text-muted">Ranking de produtos e categorias</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IncluirUsuarios" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IncluirUsuarios" class="form-check-label">
+                                            <i class="fas fa-users me-2 text-warning"></i>
+                                            <strong>Desempenho de Usuários</strong>
+                                            <br><small class="text-muted">Performance dos garçons</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IncluirOcupacao" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IncluirOcupacao" class="form-check-label">
+                                            <i class="fas fa-bed me-2 text-primary"></i>
+                                            <strong>Ocupação de Quartos</strong>
+                                            <br><small class="text-muted">Análise de hospedagem</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IncluirCancelamentos" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IncluirCancelamentos" class="form-check-label">
+                                            <i class="fas fa-ban me-2 text-danger"></i>
+                                            <strong>Cancelamentos</strong>
+                                            <br><small class="text-muted">Análise de cancelamentos e motivos</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros Específicos -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-filter me-2"></i>
+                                Filtros Específicos (opcional)
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label asp-for="CategoriaFiltro" class="form-label">Categoria</label>
+                                    <select asp-for="CategoriaFiltro" class="form-select">
+                                        <option value="">Todas as categorias</option>
+                                        <option value="Bebidas">Bebidas</option>
+                                        <option value="Comidas">Comidas</option>
+                                        <option value="Serviços">Serviços</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="UsuarioFiltro" class="form-label">Usuário</label>
+                                    <input asp-for="UsuarioFiltro" class="form-control" 
+                                           placeholder="Ex: 18, 03..." />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="QuartoFiltro" class="form-label">Quarto</label>
+                                    <input asp-for="QuartoFiltro" class="form-control" 
+                                           placeholder="Ex: 101, 205..." />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-cogs me-2"></i>
+                                Gerar Relatório Personalizado
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" onclick="limparFormulario()">
+                                <i class="fas fa-eraser me-1"></i>Limpar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview da Configuração -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Preview da Configuração
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="previewConfig">
+                    <p class="text-muted">Configure as opções ao lado para ver o preview</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exemplos de Relatórios -->
+        <div class="card mt-3">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Sugestões Rápidas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="configurarRelatorio('vendas')">
+                        ?? Relatório de Vendas
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="configurarRelatorio('completo')">
+                        ?? Relatório Completo
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="configurarRelatorio('performance')">
+                        ?? Performance dos Garçons
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultado do Relatório -->
+@if (Model.Resultado != null && !Model.Resultado.TemErro)
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        @(!string.IsNullOrWhiteSpace(Model.TituloPersonalizado) ? Model.TituloPersonalizado : "Relatório Personalizado")
+                    </h5>
+                    <small>Gerado em: @Model.Resultado.DataGeracao.ToString("dd/MM/yyyy HH:mm") | Período: @Model.Resultado.ObterPeriodoFormatado()</small>
+                </div>
+                <div class="card-body">
+                    <!-- Resumo de Vendas -->
+                    @if (Model.Resultado.ResumoVendas != null)
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-success">
+                                <i class="fas fa-chart-line me-2"></i>
+                                ?? Resumo de Vendas
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="text-success">@Model.Resultado.ResumoVendas.TotalVendas.ToString("C2")</h4>
+                                            <small>Total de Vendas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="text-info">@Model.Resultado.ResumoVendas.QuantidadeLancamentos</h4>
+                                            <small>Lançamentos</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="text-warning">@Model.Resultado.ResumoVendas.TicketMedio.ToString("C2")</h4>
+                                            <small>Ticket Médio</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h4 class="text-danger">@Model.Resultado.ResumoVendas.TaxaCancelamento.ToString("F1")%</h4>
+                                            <small>Taxa Cancelamento</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Top Produtos -->
+                    @if (Model.Resultado.ProdutosMaisVendidos?.Any() == true)
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-info">
+                                <i class="fas fa-box me-2"></i>
+                                ?? Top 5 Produtos Mais Vendidos
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Produto</th>
+                                            <th>Categoria</th>
+                                            <th class="text-end">Vendas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var produto in Model.Resultado.ProdutosMaisVendidos.Take(5))
+                                        {
+                                            <tr>
+                                                <td><span class="badge bg-warning text-dark">@produto.Ranking</span></td>
+                                                <td>@produto.NomeProduto</td>
+                                                <td><span class="badge bg-secondary">@produto.Categoria</span></td>
+                                                <td class="text-end fw-bold">@produto.TotalVendas.ToString("C2")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Top Usuários -->
+                    @if (Model.Resultado.DesempenhoUsuarios?.Any() == true)
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-warning">
+                                <i class="fas fa-users me-2"></i>
+                                ?? Top 5 Usuários por Performance
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Usuário</th>
+                                            <th class="text-end">Total Vendas</th>
+                                            <th class="text-center">Lançamentos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var usuario in Model.Resultado.DesempenhoUsuarios.Take(5))
+                                        {
+                                            <tr>
+                                                <td><span class="badge bg-warning text-dark">@usuario.Ranking</span></td>
+                                                <td>@(usuario.NomeUsuario ?? $"Usuário {usuario.CodigoUsuario}")</td>
+                                                <td class="text-end fw-bold">@usuario.TotalVendas.ToString("C2")</td>
+                                                <td class="text-center">@usuario.QuantidadeLancamentos</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Outros dados conforme configuração -->
+                    @if (Model.Resultado.OcupacaoPorPeriodo?.Any() == true)
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-primary">
+                                <i class="fas fa-bed me-2"></i>
+                                ?? Resumo de Ocupação
+                            </h6>
+                            <p>Total de registros no período: <strong>@Model.Resultado.OcupacaoPorPeriodo.Sum(o => o.NovasReservas + o.ReservasAtivas + o.ReservasFinalizadas)</strong></p>
+                        </div>
+                    }
+
+                    <!-- Botões de Ação -->
+                    <div class="mt-4">
+                        <button type="button" class="btn btn-success" onclick="exportarPersonalizadoExcel()">
+                            <i class="fas fa-file-excel me-2"></i>Exportar Excel
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="exportarPersonalizadoPdf()">
+                            <i class="fas fa-file-pdf me-2"></i>Exportar PDF
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="gerarNovoRelatorio()">
+                            <i class="fas fa-plus me-2"></i>Novo Relatório
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Configurações rápidas
+        function configurarRelatorio(tipo) {
+            // Limpar todas as opções
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            switch(tipo) {
+                case 'vendas':
+                    document.querySelector('input[name="IncluirVendas"]').checked = true;
+                    document.querySelector('input[name="IncluirProdutos"]').checked = true;
+                    document.querySelector('input[name="TituloPersonalizado"]').value = 'Relatório de Vendas e Produtos';
+                    break;
+                case 'completo':
+                    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+                    document.querySelector('input[name="TituloPersonalizado"]').value = 'Relatório Gerencial Completo';
+                    break;
+                case 'performance':
+                    document.querySelector('input[name="IncluirUsuarios"]').checked = true;
+                    document.querySelector('input[name="IncluirVendas"]').checked = true;
+                    document.querySelector('input[name="TituloPersonalizado"]').value = 'Relatório de Performance dos Garçons';
+                    break;
+            }
+            atualizarPreview();
+        }
+
+        // Limpar formulário
+        function limparFormulario() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelector('input[name="TituloPersonalizado"]').value = '';
+            document.querySelector('select[name="CategoriaFiltro"]').value = '';
+            document.querySelector('input[name="UsuarioFiltro"]').value = '';
+            document.querySelector('input[name="QuartoFiltro"]').value = '';
+            atualizarPreview();
+        }
+
+        // Atualizar preview
+        function atualizarPreview() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            const titulo = document.querySelector('input[name="TituloPersonalizado"]').value;
+            const categoria = document.querySelector('select[name="CategoriaFiltro"]').value;
+            const usuario = document.querySelector('input[name="UsuarioFiltro"]').value;
+            const quarto = document.querySelector('input[name="QuartoFiltro"]').value;
+            
+            let preview = '<h6>?? Configuração Atual:</h6>';
+            
+            if (titulo) {
+                preview += `<p><strong>Título:</strong> ${titulo}</p>`;
+            }
+            
+            if (checkboxes.length > 0) {
+                preview += '<p><strong>Seções:</strong></p><ul>';
+                checkboxes.forEach(cb => {
+                    const label = cb.nextElementSibling.querySelector('strong').textContent;
+                    preview += `<li>${label}</li>`;
+                });
+                preview += '</ul>';
+            } else {
+                preview += '<p class="text-warning">?? Nenhuma seção selecionada</p>';
+            }
+            
+            if (categoria || usuario || quarto) {
+                preview += '<p><strong>Filtros:</strong></p><ul>';
+                if (categoria) preview += `<li>Categoria: ${categoria}</li>`;
+                if (usuario) preview += `<li>Usuário: ${usuario}</li>`;
+                if (quarto) preview += `<li>Quarto: ${quarto}</li>`;
+                preview += '</ul>';
+            }
+            
+            document.getElementById('previewConfig').innerHTML = preview;
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atualizar preview em tempo real
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('change', atualizarPreview);
+                element.addEventListener('input', atualizarPreview);
+            });
+            
+            // Preview inicial
+            atualizarPreview();
+        });
+
+        // Funções de exportação
+        function exportarPersonalizadoExcel() {
+            // Implementar exportação específica do relatório personalizado
+            alert('Funcionalidade de exportação será implementada em breve.');
+        }
+
+        function exportarPersonalizadoPdf() {
+            // Implementar exportação específica do relatório personalizado
+            alert('Funcionalidade de exportação será implementada em breve.');
+        }
+
+        function gerarNovoRelatorio() {
+            window.location.href = '/relatorio/personalizado';
+        }
+    </script>
+}

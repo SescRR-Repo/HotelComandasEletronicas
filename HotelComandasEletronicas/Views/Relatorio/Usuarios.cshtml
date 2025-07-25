@@ -1,0 +1,435 @@
+@model HotelComandasEletronicas.ViewModels.RelatorioUsuariosViewModel
+@{
+    ViewData["Title"] = "Relatório de Usuários - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-user-chart me-3"></i>
+                Relatório de Desempenho dos Usuários
+            </h2>
+            <p class="mb-0 fs-5">Performance dos garçons - @Model.DataInicio.ToString("dd/MM/yyyy") a @Model.DataFim.ToString("dd/MM/yyyy")</p>
+            <div class="mt-2">
+                <a href="/relatorio" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Filtros de Análise
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="/relatorio/usuarios" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="inicio" class="form-label">Data Início</label>
+                        <input type="date" id="inicio" name="inicio" class="form-control" 
+                               value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fim" class="form-label">Data Fim</label>
+                        <input type="date" id="fim" name="fim" class="form-control" 
+                               value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-1"></i>Atualizar Relatório
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ranking de Desempenho -->
+@if (Model.DesempenhoPorUsuario?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="fas fa-trophy me-2 text-warning"></i>
+                ?? Ranking de Desempenho dos Garçons
+            </h4>
+        </div>
+
+        <!-- Top 3 Destaque -->
+        <div class="col-12 mb-4">
+            <div class="row">
+                @foreach (var usuario in Model.DesempenhoPorUsuario.Take(3))
+                {
+                    <div class="col-lg-4 mb-3">
+                        <div class="card h-100 @(usuario.Ranking == 1 ? "border-warning shadow" : usuario.Ranking == 2 ? "border-secondary" : "border-light")">
+                            <div class="card-header text-center @usuario.ObterClasseRanking()">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <i class="@usuario.ObterIconeRanking() fa-3x me-3"></i>
+                                    <div>
+                                        <span class="fs-1 fw-bold">#@usuario.Ranking</span>
+                                        <div class="small">@(usuario.Ranking == 1 ? "?? Campeão" : usuario.Ranking == 2 ? "?? Vice" : "?? 3º Lugar")</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body text-center">
+                                <h5 class="card-title">@(usuario.NomeUsuario ?? $"Usuário {usuario.CodigoUsuario}")</h5>
+                                <h6 class="text-muted">Código: @usuario.CodigoUsuario</h6>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-success d-block fs-4">@usuario.TotalVendas.ToString("C0")</strong>
+                                        <small class="text-muted">Total Vendas</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-primary d-block fs-4">@usuario.QuantidadeLancamentos</strong>
+                                        <small class="text-muted">Lançamentos</small>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-info d-block">@usuario.TicketMedio.ToString("C2")</strong>
+                                        <small class="text-muted">Ticket Médio</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-warning d-block">@usuario.DiasTrabalhados</strong>
+                                        <small class="text-muted">Dias</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Tabela Completa -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Ranking Completo de Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">#</th>
+                                    <th>Usuário</th>
+                                    <th class="text-end">Total Vendas</th>
+                                    <th class="text-center">Lançamentos</th>
+                                    <th class="text-end">Ticket Médio</th>
+                                    <th class="text-center">Dias Trabalhados</th>
+                                    <th class="text-end">Média/Dia</th>
+                                    <th class="text-end">Maior Venda</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var usuario in Model.DesempenhoPorUsuario)
+                                {
+                                    <tr class="@usuario.ObterClasseRanking()">
+                                        <td class="text-center">
+                                            <span class="badge @(usuario.Ranking <= 3 ? "bg-warning text-dark" : "bg-secondary") fs-6">
+                                                @usuario.Ranking
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <strong>@(usuario.NomeUsuario ?? $"Usuário {usuario.CodigoUsuario}")</strong>
+                                                    @if (usuario.Ranking <= 3)
+                                                    {
+                                                        <i class="@usuario.ObterIconeRanking() ms-2 text-warning"></i>
+                                                    }
+                                                    <br>
+                                                    <small class="text-muted">Código: @usuario.CodigoUsuario</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-success">@usuario.TotalVendas.ToString("C2")</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">@usuario.QuantidadeLancamentos</span>
+                                        </td>
+                                        <td class="text-end">@usuario.TicketMedio.ToString("C2")</td>
+                                        <td class="text-center">@usuario.DiasTrabalhados</td>
+                                        <td class="text-end">@usuario.MediaVendasPorDia.ToString("C2")</td>
+                                        <td class="text-end">
+                                            <strong class="text-warning">@usuario.MaiorVenda.ToString("C2")</strong>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Análise de Lançamentos -->
+@if (Model.LancamentosPorUsuario?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Distribuição de Lançamentos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoLancamentos" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Taxa de Cancelamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var usuario in Model.LancamentosPorUsuario.OrderBy(u => u.TaxaCancelamento).Take(5))
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><strong>@(usuario.NomeUsuario ?? $"Usuário {usuario.CodigoUsuario}")</strong></span>
+                                <span class="@usuario.ObterClasseTaxaCancelamento() fw-bold">@usuario.TaxaCancelamento.ToString("F1")%</span>
+                            </div>
+                            <div class="progress mt-1" style="height: 8px;">
+                                <div class="progress-bar @(usuario.TaxaCancelamento < 5 ? "bg-success" : usuario.TaxaCancelamento < 15 ? "bg-warning" : "bg-danger")" 
+                                     style="width: @(usuario.TaxaCancelamento > 30 ? 30 : usuario.TaxaCancelamento)%"></div>
+                            </div>
+                            <small class="text-muted">
+                                Ativos: @usuario.LancamentosAtivos | Cancelados: @usuario.LancamentosCancelados
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Detalhes do Usuário Selecionado -->
+@if (Model.DetalhesUsuario != null)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Detalhes: @Model.DetalhesUsuario.NomeUsuario (Código: @Model.DetalhesUsuario.CodigoUsuario)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>?? Estatísticas do Período</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Total de Vendas:</strong></td>
+                                    <td class="text-success fw-bold">@Model.DetalhesUsuario.TotalVendas.ToString("C2")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Lançamentos:</strong></td>
+                                    <td>@Model.DetalhesUsuario.TotalLancamentos</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ticket Médio:</strong></td>
+                                    <td>@Model.DetalhesUsuario.TicketMedio.ToString("C2")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Taxa Cancelamento:</strong></td>
+                                    <td class="@(Model.DetalhesUsuario.TaxaCancelamento < 5 ? "text-success" : Model.DetalhesUsuario.TaxaCancelamento < 15 ? "text-warning" : "text-danger")">
+                                        @Model.DetalhesUsuario.TaxaCancelamento.ToString("F1")%
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>?? Informações Pessoais</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Perfil:</strong></td>
+                                    <td><span class="badge bg-secondary">@Model.DetalhesUsuario.PerfilUsuario</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Cadastro:</strong></td>
+                                    <td>@Model.DetalhesUsuario.DataCadastro.ToString("dd/MM/yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Último Acesso:</strong></td>
+                                    <td>@(Model.DetalhesUsuario.UltimoAcesso?.ToString("dd/MM/yyyy HH:mm") ?? "Nunca")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Horário Mais Ativo:</strong></td>
+                                    <td>@Model.DetalhesUsuario.FormatarHorarioMaisAtivo()</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Exportação -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>
+                    Exportar Relatório de Usuários
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-success w-100" onclick="exportarExcel()">
+                            <i class="fas fa-file-excel me-2"></i>
+                            Exportar para Excel
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-danger w-100" onclick="exportarPdf()">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Exportar para PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Gráfico de lançamentos por usuário
+        @if (Model.LancamentosPorUsuario?.Any() == true)
+        {
+            <text>
+            const ctx = document.getElementById('graficoLancamentos').getContext('2d');
+            const lancamentosChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.LancamentosPorUsuario.Take(5).Select(u => $"'{u.NomeUsuario ?? $"Usuário {u.CodigoUsuario}"}")))],
+                    datasets: [{
+                        label: 'Lançamentos Ativos',
+                        data: [@Html.Raw(string.Join(",", Model.LancamentosPorUsuario.Take(5).Select(u => u.LancamentosAtivos)))],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Funções de exportação
+        function exportarExcel() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarexcel';
+            
+            const dados = {
+                tipoRelatorio: 'usuarios',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: '@Model.UsuarioSelecionado'
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function exportarPdf() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarpdf';
+            
+            const dados = {
+                tipoRelatorio: 'usuarios',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: '@Model.UsuarioSelecionado'
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+}
+
+@{
+    <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken()" />
+}

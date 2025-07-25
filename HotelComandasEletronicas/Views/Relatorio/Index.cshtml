@@ -1,0 +1,325 @@
+@model HotelComandasEletronicas.ViewModels.RelatoriosDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard de Relatórios - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-chart-bar me-3"></i>
+                Dashboard de Relatórios
+            </h2>
+            <p class="mb-0 fs-5">Análise gerencial completa do sistema</p>
+            <small class="text-muted">Período: @Model.ObterPeriodoFormatado() (@Model.DiasNoPeríodo dias)</small>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas Gerais -->
+@if (Model.EstatisticasGerais != null)
+{
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Vendas Hoje</h5>
+                    <h3 class="text-primary">@Model.EstatisticasGerais.VendasHoje.ToString("C2")</h3>
+                    <small class="@Model.EstatisticasGerais.ClasseCrescimentoDiario">
+                        @Model.EstatisticasGerais.FormatarCrescimentoDiario() vs ontem
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Vendas do Mês</h5>
+                    <h3 class="text-success">@Model.EstatisticasGerais.VendasMesAtual.ToString("C2")</h3>
+                    <small class="@Model.EstatisticasGerais.ClasseCrescimentoMensal">
+                        @Model.EstatisticasGerais.FormatarCrescimentoMensal() vs mês anterior
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-receipt fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Lançamentos Hoje</h5>
+                    <h3 class="text-info">@Model.EstatisticasGerais.LancamentosHoje</h3>
+                    <small class="text-muted">Ticket médio: @Model.EstatisticasGerais.TicketMedioHoje.ToString("C2")</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Hóspedes Ativos</h5>
+                    <h3 class="text-warning">@Model.EstatisticasGerais.TotalHospedesAtivos</h3>
+                    <small class="text-muted">Total: @Model.EstatisticasGerais.TotalUsuariosAtivos usuários</small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Menu de Relatórios -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Relatórios Disponíveis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        <a href="/relatorio/vendas" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-chart-line fa-3x mb-2"></i>
+                            <h5>Relatório de Vendas</h5>
+                            <small>Análise de vendas por período</small>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-4 mb-3">
+                        <a href="/relatorio/produtos" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-box fa-3x mb-2"></i>
+                            <h5>Produtos Mais Vendidos</h5>
+                            <small>Ranking e análise de produtos</small>
+                        </a>
+                    </div>
+
+                    <div class="col-lg-4 mb-3">
+                        <a href="/relatorio/usuarios" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-user-chart fa-3x mb-2"></i>
+                            <h5>Desempenho de Usuários</h5>
+                            <small>Performance por garçom</small>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        <a href="/relatorio/ocupacao" class="btn btn-outline-warning w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-bed fa-3x mb-2"></i>
+                            <h5>Ocupação de Quartos</h5>
+                            <small>Análise de ocupação hoteleira</small>
+                        </a>
+                    </div>
+
+                    <div class="col-lg-4 mb-3">
+                        <a href="/relatorio/cancelamentos" class="btn btn-outline-danger w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-ban fa-3x mb-2"></i>
+                            <h5>Relatório de Cancelamentos</h5>
+                            <small>Análise de cancelamentos</small>
+                        </a>
+                    </div>
+
+                    <div class="col-lg-4 mb-3">
+                        <a href="/relatorio/personalizado" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-cogs fa-3x mb-2"></i>
+                            <h5>Relatório Personalizado</h5>
+                            <small>Configure seu próprio relatório</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vendas Recentes -->
+@if (Model.VendasRecentes?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>
+                        Vendas dos Últimos 7 Dias
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoVendasRecentes" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>
+                        Top 5 Produtos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.ProdutosMaisVendidos?.Any() == true)
+                    {
+                        @foreach (var produto in Model.ProdutosMaisVendidos.Take(5))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge @produto.ObterClasseRanking() me-2">@produto.Ranking</span>
+                                    <strong>@produto.NomeProduto</strong>
+                                    <br>
+                                    <small class="text-muted">@produto.QuantidadeVendida unidades</small>
+                                </div>
+                                <span class="text-success fw-bold">@produto.TotalVendas.ToString("C2")</span>
+                            </div>
+                            @if (produto.Ranking < 5)
+                            {
+                                <hr class="my-2">
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Configuração de Período -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-calendar me-2"></i>
+                    Configurar Período de Análise
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="get" action="/relatorio" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="dataInicio" class="form-label">Data Início</label>
+                        <input type="date" id="dataInicio" name="dataInicio" class="form-control" 
+                               value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dataFim" class="form-label">Data Fim</label>
+                        <input type="date" id="dataFim" name="dataFim" class="form-control" 
+                               value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sync me-1"></i>Atualizar Dashboard
+                        </button>
+                    </div>
+                </form>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Períodos Pré-definidos:</label>
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="definirPeriodo('hoje')">Hoje</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="definirPeriodo('semana')">Esta Semana</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="definirPeriodo('mes')">Este Mês</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="definirPeriodo('ultimos30')">Últimos 30 dias</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Gráfico de vendas recentes
+        @if (Model.VendasRecentes?.Any() == true)
+        {
+            <text>
+            const ctx = document.getElementById('graficoVendasRecentes').getContext('2d');
+            const vendasChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.VendasRecentes.Select(v => $"'{v.Data:dd/MM}'")))],
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: [@Html.Raw(string.Join(",", Model.VendasRecentes.Select(v => v.TotalVendas.ToString("F2").Replace(",", "."))))],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Definir períodos pré-definidos
+        function definirPeriodo(periodo) {
+            const hoje = new Date();
+            let inicio, fim;
+
+            switch(periodo) {
+                case 'hoje':
+                    inicio = fim = hoje;
+                    break;
+                case 'semana':
+                    const primeiroDiaSemana = new Date(hoje.setDate(hoje.getDate() - hoje.getDay()));
+                    inicio = primeiroDiaSemana;
+                    fim = new Date();
+                    break;
+                case 'mes':
+                    inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    fim = new Date();
+                    break;
+                case 'ultimos30':
+                    inicio = new Date();
+                    inicio.setDate(inicio.getDate() - 30);
+                    fim = new Date();
+                    break;
+            }
+
+            document.getElementById('dataInicio').value = inicio.toISOString().split('T')[0];
+            document.getElementById('dataFim').value = fim.toISOString().split('T')[0];
+        }
+
+        // Auto-atualização dos dados (opcional)
+        setInterval(() => {
+            // Implementar atualização automática se necessário
+        }, 300000); // 5 minutos
+    </script>
+}

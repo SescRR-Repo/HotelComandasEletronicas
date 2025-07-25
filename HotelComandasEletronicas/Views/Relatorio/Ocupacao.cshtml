@@ -1,0 +1,549 @@
+@model HotelComandasEletronicas.ViewModels.RelatorioOcupacaoViewModel
+@{
+    ViewData["Title"] = "Relatório de Ocupação - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-bed me-3"></i>
+                Relatório de Ocupação de Quartos
+            </h2>
+            <p class="mb-0 fs-5">Análise de hospedagem e consumo - @Model.DataInicio.ToString("dd/MM/yyyy") a @Model.DataFim.ToString("dd/MM/yyyy")</p>
+            <div class="mt-2">
+                <a href="/relatorio" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Período de Análise
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="/relatorio/ocupacao" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="inicio" class="form-label">Data Início</label>
+                        <input type="date" id="inicio" name="inicio" class="form-control" 
+                               value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fim" class="form-label">Data Fim</label>
+                        <input type="date" id="fim" name="fim" class="form-control" 
+                               value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-chart-bar me-1"></i>Atualizar Relatório
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo de Ocupação -->
+@if (Model.TempoMedioEstadia != null)
+{
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-primary mb-2">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Total de Registros</h5>
+                    <h3 class="text-primary">@Model.TempoMedioEstadia.TotalRegistros</h3>
+                    <small class="text-muted">Hospedagens no período</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-door-open fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Registros Ativos</h5>
+                    <h3 class="text-success">@Model.TempoMedioEstadia.RegistrosAtivos</h3>
+                    <small class="text-muted">Hospedagens em andamento</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-door-closed fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Registros Finalizados</h5>
+                    <h3 class="text-info">@Model.TempoMedioEstadia.RegistrosFinalizados</h3>
+                    <small class="text-muted">Check-outs realizados</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Tempo Médio</h5>
+                    <h3 class="text-warning">@Model.TempoMedioEstadia.FormatarTempoMedio()</h3>
+                    <small class="text-muted">Duração média das estadias</small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Gráfico de Ocupação por Período -->
+@if (Model.OcupacaoPorPeriodo?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>
+                        Ocupação Diária no Período
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoOcupacao" width="400" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Ocupação Detalhada -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Detalhamento da Ocupação
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th class="text-center">Novos Check-ins</th>
+                                    <th class="text-center">Ativos</th>
+                                    <th class="text-center">Check-outs</th>
+                                    <th class="text-end">Valor Médio Gasto</th>
+                                    <th>Quarto Mais Ativo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ocupacao in Model.OcupacaoPorPeriodo.OrderByDescending(o => o.Data))
+                                {
+                                    <tr>
+                                        <td><strong>@ocupacao.Data.ToString("dd/MM/yyyy")</strong></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success">@ocupacao.NovasReservas</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">@ocupacao.ReservasAtivas</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">@ocupacao.ReservasFinalizadas</span>
+                                        </td>
+                                        <td class="text-end">@ocupacao.ValorMedioGasto.ToString("C2")</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(ocupacao.QuartoMaisAtivo))
+                                            {
+                                                <span class="badge bg-warning text-dark">@ocupacao.QuartoMaisAtivo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Top Quartos Mais Ativos -->
+@if (Model.QuartosMaisAtivos?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="fas fa-star me-2 text-warning"></i>
+                ?? Top Quartos Mais Ativos
+            </h4>
+        </div>
+
+        <!-- Top 3 Destaque -->
+        <div class="col-12 mb-4">
+            <div class="row">
+                @foreach (var quarto in Model.QuartosMaisAtivos.Take(3))
+                {
+                    <div class="col-lg-4 mb-3">
+                        <div class="card h-100 @(quarto.Ranking == 1 ? "border-warning shadow" : quarto.Ranking == 2 ? "border-secondary" : "border-light")">
+                            <div class="card-header text-center @(quarto.Ranking == 1 ? "bg-warning text-dark" : quarto.Ranking == 2 ? "bg-secondary text-white" : "bg-light")">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <i class="fas fa-door-open fa-2x me-3"></i>
+                                    <div>
+                                        <span class="fs-1 fw-bold">#@quarto.Ranking</span>
+                                        <div class="small">Quarto @quarto.NumeroQuarto</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body text-center">
+                                <h5 class="card-title">@quarto.NomeHospede</h5>
+                                <h6 class="text-muted">Quarto @quarto.NumeroQuarto</h6>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-success d-block fs-4">@quarto.TotalConsumido.ToString("C0")</strong>
+                                        <small class="text-muted">Total Consumido</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-primary d-block fs-4">@quarto.QuantidadeLancamentos</strong>
+                                        <small class="text-muted">Lançamentos</small>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-info d-block">@quarto.TicketMedio.ToString("C2")</strong>
+                                        <small class="text-muted">Ticket Médio</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-warning d-block">@quarto.DiasAtivos</strong>
+                                        <small class="text-muted">Dias Ativos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Tabela Completa de Quartos -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Ranking Completo dos Quartos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">#</th>
+                                    <th>Quarto</th>
+                                    <th>Hóspede</th>
+                                    <th class="text-end">Total Consumido</th>
+                                    <th class="text-center">Lançamentos</th>
+                                    <th class="text-end">Ticket Médio</th>
+                                    <th class="text-center">Dias Ativos</th>
+                                    <th class="text-end">Média/Dia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var quarto in Model.QuartosMaisAtivos)
+                                {
+                                    <tr class="@(quarto.Ranking <= 3 ? "table-warning" : "")">
+                                        <td class="text-center">
+                                            <span class="badge @(quarto.Ranking <= 3 ? "bg-warning text-dark" : "bg-secondary") fs-6">
+                                                @quarto.Ranking
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary fs-6">@quarto.NumeroQuarto</span>
+                                            @if (quarto.Ranking <= 3)
+                                            {
+                                                <i class="fas fa-trophy ms-2 text-warning"></i>
+                                            }
+                                        </td>
+                                        <td>
+                                            <strong>@quarto.NomeHospede</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-success">@quarto.TotalConsumido.ToString("C2")</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">@quarto.QuantidadeLancamentos</span>
+                                        </td>
+                                        <td class="text-end">@quarto.TicketMedio.ToString("C2")</td>
+                                        <td class="text-center">@quarto.DiasAtivos</td>
+                                        <td class="text-end">@quarto.MediaConsumoPorDia.ToString("C2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Informações Adicionais -->
+@if (Model.TempoMedioEstadia != null)
+{
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Análise de Tempo de Estadia
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-info">@Model.TempoMedioEstadia.MenorEstadia.ToString("F1")</h4>
+                            <small class="text-muted">Menor Estadia (dias)</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">@Model.TempoMedioEstadia.FormatarTempoMedio()</h4>
+                            <small class="text-muted">Tempo Médio</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">@Model.TempoMedioEstadia.MaiorEstadia.ToString("F1")</h4>
+                            <small class="text-muted">Maior Estadia (dias)</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h5 class="text-primary">@Model.TempoMedioEstadia.FormatarTempoAtual()</h5>
+                        <small class="text-muted">Tempo médio dos registros ativos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Distribuição de Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoStatus" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Exportação -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>
+                    Exportar Relatório de Ocupação
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-success w-100" onclick="exportarExcel()">
+                            <i class="fas fa-file-excel me-2"></i>
+                            Exportar para Excel
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-danger w-100" onclick="exportarPdf()">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Exportar para PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Gráfico de ocupação por período
+        @if (Model.OcupacaoPorPeriodo?.Any() == true)
+        {
+            <text>
+            const ctxOcupacao = document.getElementById('graficoOcupacao').getContext('2d');
+            const ocupacaoChart = new Chart(ctxOcupacao, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.OcupacaoPorPeriodo.Select(o => $"'{o.Data:dd/MM}'")))],
+                    datasets: [
+                        {
+                            label: 'Check-ins',
+                            data: [@Html.Raw(string.Join(",", Model.OcupacaoPorPeriodo.Select(o => o.NovasReservas)))],
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Ativos',
+                            data: [@Html.Raw(string.Join(",", Model.OcupacaoPorPeriodo.Select(o => o.ReservasAtivas)))],
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Check-outs',
+                            data: [@Html.Raw(string.Join(",", Model.OcupacaoPorPeriodo.Select(o => o.ReservasFinalizadas)))],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Gráfico de status
+        @if (Model.TempoMedioEstadia != null)
+        {
+            <text>
+            const ctxStatus = document.getElementById('graficoStatus').getContext('2d');
+            const statusChart = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ativos', 'Finalizados'],
+                    datasets: [{
+                        data: [@Model.TempoMedioEstadia.RegistrosAtivos, @Model.TempoMedioEstadia.RegistrosFinalizados],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(54, 162, 235, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Funções de exportação
+        function exportarExcel() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarexcel';
+            
+            const dados = {
+                tipoRelatorio: 'ocupacao',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: ''
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function exportarPdf() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarpdf';
+            
+            const dados = {
+                tipoRelatorio: 'ocupacao',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: ''
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+}
+
+@{
+    <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken()" />
+}

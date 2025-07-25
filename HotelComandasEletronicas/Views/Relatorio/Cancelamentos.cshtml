@@ -1,0 +1,624 @@
+@model HotelComandasEletronicas.ViewModels.RelatorioCancelamentosViewModel
+@{
+    ViewData["Title"] = "Relatório de Cancelamentos - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-ban me-3"></i>
+                Relatório de Cancelamentos
+            </h2>
+            <p class="mb-0 fs-5">Análise de cancelamentos e motivos - @Model.DataInicio.ToString("dd/MM/yyyy") a @Model.DataFim.ToString("dd/MM/yyyy")</p>
+            <div class="mt-2">
+                <a href="/relatorio" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Período de Análise
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="/relatorio/cancelamentos" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="inicio" class="form-label">Data Início</label>
+                        <input type="date" id="inicio" name="inicio" class="form-control" 
+                               value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fim" class="form-label">Data Fim</label>
+                        <input type="date" id="fim" name="fim" class="form-control" 
+                               value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-chart-bar me-1"></i>Atualizar Relatório
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo de Cancelamentos -->
+@if (Model.CancelamentosPorPeriodo?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-danger mb-2">
+                        <i class="fas fa-ban fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Total Cancelamentos</h5>
+                    <h3 class="text-danger">@Model.CancelamentosPorPeriodo.Sum(c => c.QuantidadeCancelamentos)</h3>
+                    <small class="text-muted">No período selecionado</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Valor Cancelado</h5>
+                    <h3 class="text-warning">@Model.CancelamentosPorPeriodo.Sum(c => c.ValorCancelado).ToString("C2")</h3>
+                    <small class="text-muted">Total em valores</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-percentage fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Taxa Média</h5>
+                    <h3 class="text-info">@(Model.CancelamentosPorPeriodo.Any() ? Model.CancelamentosPorPeriodo.Average(c => c.TaxaCancelamento).ToString("F1") : "0")%</h3>
+                    <small class="text-muted">Taxa de cancelamento</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-secondary mb-2">
+                        <i class="fas fa-calculator fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Ticket Médio</h5>
+                    <h3 class="text-secondary">@(Model.CancelamentosPorPeriodo.Any() ? Model.CancelamentosPorPeriodo.Average(c => c.TicketMedioCancelado).ToString("C2") : "R$ 0,00")</h3>
+                    <small class="text-muted">Valor médio cancelado</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Cancelamentos por Período -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Evolução dos Cancelamentos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoCancelamentos" width="400" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Cancelamentos por Período -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Cancelamentos por Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th class="text-center">Qtd Cancelamentos</th>
+                                    <th class="text-end">Valor Cancelado</th>
+                                    <th class="text-end">Ticket Médio</th>
+                                    <th class="text-center">Total Lançamentos</th>
+                                    <th class="text-center">Taxa</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var cancelamento in Model.CancelamentosPorPeriodo.OrderByDescending(c => c.Data))
+                                {
+                                    <tr>
+                                        <td><strong>@cancelamento.Data.ToString("dd/MM/yyyy")</strong></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-danger">@cancelamento.QuantidadeCancelamentos</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-danger">@cancelamento.ValorCancelado.ToString("C2")</strong>
+                                        </td>
+                                        <td class="text-end">@cancelamento.TicketMedioCancelado.ToString("C2")</td>
+                                        <td class="text-center">@cancelamento.TotalLancamentos</td>
+                                        <td class="text-center">
+                                            <span class="badge @(cancelamento.TaxaCancelamento < 5 ? "bg-success" : cancelamento.TaxaCancelamento < 15 ? "bg-warning text-dark" : "bg-danger")">
+                                                @cancelamento.TaxaCancelamento.ToString("F1")%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-warning">
+                                    <th>TOTAL:</th>
+                                    <th class="text-center">@Model.CancelamentosPorPeriodo.Sum(c => c.QuantidadeCancelamentos)</th>
+                                    <th class="text-end">@Model.CancelamentosPorPeriodo.Sum(c => c.ValorCancelado).ToString("C2")</th>
+                                    <th class="text-end">@(Model.CancelamentosPorPeriodo.Any() ? Model.CancelamentosPorPeriodo.Average(c => c.TicketMedioCancelado).ToString("C2") : "R$ 0,00")</th>
+                                    <th class="text-center">@Model.CancelamentosPorPeriodo.Sum(c => c.TotalLancamentos)</th>
+                                    <th class="text-center">@(Model.CancelamentosPorPeriodo.Any() ? Model.CancelamentosPorPeriodo.Average(c => c.TaxaCancelamento).ToString("F1") : "0")%</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Análise de Motivos -->
+@if (Model.MotivosCancelamento?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Distribuição por Motivo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoMotivos" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-ol me-2"></i>
+                        Ranking de Motivos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var motivo in Model.MotivosCancelamento.OrderByDescending(m => m.Percentual))
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><strong>@motivo.Motivo</strong></span>
+                                <span class="badge @motivo.ObterClassePercentual()">@motivo.Percentual.ToString("F1")%</span>
+                            </div>
+                            <div class="progress mt-1" style="height: 10px;">
+                                <div class="progress-bar @motivo.ObterClassePercentual().Replace("bg-", "")" 
+                                     style="width: @motivo.Percentual.ToString("F1").Replace(",", ".")%"></div>
+                            </div>
+                            <small class="text-muted">
+                                @motivo.Quantidade ocorrências • @motivo.ValorTotal.ToString("C2")
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Produtos Mais Cancelados -->
+@if (Model.ProdutosMaisCancelados?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                 Produtos Mais Cancelados
+            </h4>
+        </div>
+
+        <!-- Top 3 Produtos Problemáticos -->
+        <div class="col-12 mb-4">
+            <div class="row">
+                @foreach (var produto in Model.ProdutosMaisCancelados.Take(3))
+                {
+                    <div class="col-lg-4 mb-3">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white text-center">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                <h6>Produto Problemático</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h5 class="card-title">@produto.NomeProduto</h5>
+                                <span class="badge bg-secondary mb-2">@produto.Categoria</span>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <strong class="text-danger d-block fs-4">@produto.QuantidadeCancelada</strong>
+                                        <small class="text-muted">Qtd Cancelada</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-warning d-block fs-4">@produto.NumeroCancelamentos</strong>
+                                        <small class="text-muted">Ocorrências</small>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="text-center">
+                                    <strong class="text-danger fs-5">@produto.ValorCancelado.ToString("C2")</strong>
+                                    <br>
+                                    <small class="text-muted">Valor Total Cancelado</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Tabela Completa -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Lista Completa de Produtos Cancelados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th class="text-center">Qtd Cancelada</th>
+                                    <th class="text-center">Nº Cancelamentos</th>
+                                    <th class="text-end">Valor Cancelado</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var produto in Model.ProdutosMaisCancelados)
+                                {
+                                    <tr>
+                                        <td><strong>@produto.NomeProduto</strong></td>
+                                        <td>
+                                            <span class="badge bg-secondary">@produto.Categoria</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-warning text-dark">@produto.QuantidadeCancelada</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-danger">@produto.NumeroCancelamentos</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-danger">@produto.ValorCancelado.ToString("C2")</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (produto.NumeroCancelamentos >= 10)
+                                            {
+                                                <span class="badge bg-danger"> Crítico</span>
+                                            }
+                                            else if (produto.NumeroCancelamentos >= 5)
+                                            {
+                                                <span class="badge bg-warning text-dark">? Atenção</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-dark">Normal</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Alertas e Recomendações -->
+@if (Model.CancelamentosPorPeriodo?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                         Insights e Recomendações
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        var taxaMedia = Model.CancelamentosPorPeriodo.Average(c => c.TaxaCancelamento);
+                        var totalCancelamentos = Model.CancelamentosPorPeriodo.Sum(c => c.QuantidadeCancelamentos);
+                        var valorTotalCancelado = Model.CancelamentosPorPeriodo.Sum(c => c.ValorCancelado);
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6> Análise Geral:</h6>
+                            <ul class="list-unstyled">
+                                @if (taxaMedia < 5)
+                                {
+                                    <li class="text-success"> Taxa de cancelamento baixa (@taxaMedia.ToString("F1")%) - Excelente!</li>
+                                }
+                                else if (taxaMedia < 15)
+                                {
+                                    <li class="text-warning"> Taxa de cancelamento moderada (@taxaMedia.ToString("F1")%) - Atenção necessária</li>
+                                }
+                                else
+                                {
+                                    <li class="text-danger"> Taxa de cancelamento alta (@taxaMedia.ToString("F1")%) - Ação urgente!</li>
+                                }
+                                
+                                @if (valorTotalCancelado > 1000)
+                                {
+                                    <li class="text-danger"> Alto valor cancelado: @valorTotalCancelado.ToString("C2")</li>
+                                }
+                                
+                                @if (totalCancelamentos > 50)
+                                {
+                                    <li class="text-warning"> Volume alto de cancelamentos: @totalCancelamentos</li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6> Recomendações:</h6>
+                            <ul class="list-unstyled">
+                                @if (taxaMedia > 10)
+                                {
+                                    <li>• Revisar processos de atendimento</li>
+                                    <li>• Treinar equipe sobre produtos</li>
+                                }
+                                @if (Model.ProdutosMaisCancelados?.Any() == true)
+                                {
+                                    <li>• Investigar produtos problemáticos</li>
+                                    <li>• Verificar qualidade dos produtos</li>
+                                }
+                                <li>• Analisar motivos mais frequentes</li>
+                                <li>• Implementar ações corretivas</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Exportação -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>
+                    Exportar Relatório de Cancelamentos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-success w-100" onclick="exportarExcel()">
+                            <i class="fas fa-file-excel me-2"></i>
+                            Exportar para Excel
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-danger w-100" onclick="exportarPdf()">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Exportar para PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Gráfico de evolução dos cancelamentos
+        @if (Model.CancelamentosPorPeriodo?.Any() == true)
+        {
+            <text>
+            const ctxCancelamentos = document.getElementById('graficoCancelamentos').getContext('2d');
+            const cancelamentosChart = new Chart(ctxCancelamentos, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.CancelamentosPorPeriodo.Select(c => $"'{c.Data:dd/MM}'")))],
+                    datasets: [
+                        {
+                            label: 'Quantidade',
+                            data: [@Html.Raw(string.Join(",", Model.CancelamentosPorPeriodo.Select(c => c.QuantidadeCancelamentos)))],
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Taxa (%)',
+                            data: [@Html.Raw(string.Join(",", Model.CancelamentosPorPeriodo.Select(c => c.TaxaCancelamento.ToString("F1").Replace(",", "."))))],
+                            borderColor: 'rgb(255, 205, 86)',
+                            backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Gráfico de motivos
+        @if (Model.MotivosCancelamento?.Any() == true)
+        {
+            <text>
+            const ctxMotivos = document.getElementById('graficoMotivos').getContext('2d');
+            const motivosChart = new Chart(ctxMotivos, {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.MotivosCancelamento.Select(m => $"'{m.Motivo}'")))],
+                    datasets: [{
+                        data: [@Html.Raw(string.Join(",", Model.MotivosCancelamento.Select(m => m.Quantidade)))],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Funções de exportação
+        function exportarExcel() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarexcel';
+            
+            const dados = {
+                tipoRelatorio: 'cancelamentos',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: ''
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function exportarPdf() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarpdf';
+            
+            const dados = {
+                tipoRelatorio: 'cancelamentos',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: ''
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+}
+
+@{
+    @Html.AntiForgeryToken()
+}

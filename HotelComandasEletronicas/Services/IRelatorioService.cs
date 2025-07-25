@@ -1,54 +1,60 @@
-﻿using HotelComandasEletronicas.Models;
+﻿using HotelComandasEletronicas.ViewModels;
 
 namespace HotelComandasEletronicas.Services
 {
+    /// <summary>
+    /// Interface para serviços de relatórios do sistema
+    /// </summary>
     public interface IRelatorioService
     {
-        // Relatórios de extrato
-        Task<ExtratoCompleto> GerarExtratoAsync(int hospedeId);
-        Task<RelatorioDiario> GerarRelatorioDiarioAsync(DateTime data);
-        Task<RelatorioGerencial> GerarRelatorioGerencialAsync(DateTime inicio, DateTime fim);
+        #region Estatísticas Gerais
+        Task<EstatisticasGeraisViewModel> ObterEstatisticasGeraisAsync();
+        Task<List<VendaRecenteViewModel>> ObterVendasRecentesAsync(int dias);
+        #endregion
 
-        // Relatórios de performance
-        Task<List<Produto>> GetTopProdutosAsync(DateTime inicio, DateTime fim, int quantidade = 10);
-        Task<List<object>> GetRankingUsuariosAsync(DateTime inicio, DateTime fim);
-        Task<Dictionary<string, decimal>> GetVendasPorDiaAsync(DateTime inicio, DateTime fim);
+        #region Relatórios de Vendas
+        Task<List<VendaPorPeriodoViewModel>> ObterVendasPorPeriodoAsync(DateTime inicio, DateTime fim, string agrupamento);
+        Task<ResumoVendasViewModel> ObterResumoVendasAsync(DateTime inicio, DateTime fim);
+        Task<List<VendaPorCategoriaViewModel>> ObterVendasPorCategoriaAsync(DateTime inicio, DateTime fim);
+        #endregion
 
-        // Métodos de exportação
-        Task<bool> ExportarExcelAsync(object dados, string arquivo);
-        Task<byte[]> GerarPdfAsync(object relatorio);
+        #region Relatórios de Produtos
+        Task<List<ProdutoMaisVendidoViewModel>> ObterProdutosMaisVendidosAsync(DateTime inicio, DateTime fim, int top = 10);
+        Task<List<ProdutoPorCategoriaViewModel>> ObterProdutosPorCategoriaAsync(string categoria, DateTime inicio, DateTime fim);
+        Task<List<string>> ObterCategoriasAsync();
+        Task<List<ProdutoMaisCanceladoViewModel>> ObterProdutosMaisCanceladosAsync(DateTime inicio, DateTime fim, int top = 10);
+        #endregion
 
-        // Métodos de estatísticas
-        Task<decimal> GetTotalVendasPeriodoAsync(DateTime inicio, DateTime fim);
-        Task<Dictionary<string, object>> GetKPIsDashboardAsync();
-    }
+        #region Relatórios de Usuários
+        Task<List<DesempenhoUsuarioViewModel>> ObterDesempenhoPorUsuarioAsync(DateTime inicio, DateTime fim);
+        Task<List<LancamentoPorUsuarioViewModel>> ObterLancamentosPorUsuarioAsync(DateTime inicio, DateTime fim);
+        Task<DetalhesUsuarioViewModel> ObterDetalhesUsuarioAsync(string codigoUsuario, DateTime inicio, DateTime fim);
+        #endregion
 
-    public class ExtratoCompleto
-    {
-        public RegistroHospede Hospede { get; set; } = null!;
-        public List<LancamentoConsumo> Lancamentos { get; set; } = new();
-        public decimal TotalGeral { get; set; }
-        public DateTime DataGeracao { get; set; }
-    }
+        #region Relatórios de Ocupação
+        Task<List<OcupacaoPorPeriodoViewModel>> ObterOcupacaoPorPeriodoAsync(DateTime inicio, DateTime fim);
+        Task<List<QuartoMaisAtivoViewModel>> ObterQuartosMaisAtivosAsync(DateTime inicio, DateTime fim, int top = 10);
+        Task<TempoMedioEstadiaViewModel> ObterTempoMedioEstadiaAsync(DateTime inicio, DateTime fim);
+        #endregion
 
-    public class RelatorioDiario
-    {
-        public DateTime Data { get; set; }
-        public decimal TotalVendas { get; set; }
-        public int TotalLancamentos { get; set; }
-        public List<Produto> ProdutosMaisVendidos { get; set; } = new();
-        public Dictionary<string, int> LancamentosPorHora { get; set; } = new();
-    }
+        #region Relatórios de Cancelamentos
+        Task<List<CancelamentoPorPeriodoViewModel>> ObterCancelamentosPorPeriodoAsync(DateTime inicio, DateTime fim);
+        Task<List<MotivoCancelamentoViewModel>> ObterMotivosCancelamentoAsync(DateTime inicio, DateTime fim);
+        #endregion
 
-    public class RelatorioGerencial
-    {
-        public DateTime DataInicio { get; set; }
-        public DateTime DataFim { get; set; }
-        public decimal TotalVendas { get; set; }
-        public int TotalLancamentos { get; set; }
-        public decimal TicketMedio { get; set; }
-        public List<Produto> TopProdutos { get; set; } = new();
-        public List<object> RankingUsuarios { get; set; } = new();
-        public Dictionary<string, decimal> VendasPorDia { get; set; } = new();
+        #region Dados para Gráficos
+        Task<object> ObterDadosGraficoVendasAsync(DateTime inicio, DateTime fim, string agrupamento);
+        Task<object> ObterDadosGraficoCategoriasAsync(DateTime inicio, DateTime fim);
+        Task<object> ObterDadosGraficoUsuariosAsync(DateTime inicio, DateTime fim);
+        #endregion
+
+        #region Exportação
+        Task<byte[]> ExportarParaExcelAsync(string tipoRelatorio, DateTime inicio, DateTime fim, string? filtros = null);
+        Task<byte[]> ExportarParaPdfAsync(string tipoRelatorio, DateTime inicio, DateTime fim, string? filtros = null);
+        #endregion
+
+        #region Relatórios Personalizados
+        Task<RelatorioPersonalizadoResultadoViewModel> GerarRelatorioPersonalizadoAsync(RelatorioPersonalizadoViewModel configuracao);
+        #endregion
     }
 }

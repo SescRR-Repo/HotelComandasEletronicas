@@ -1,0 +1,423 @@
+@model HotelComandasEletronicas.ViewModels.RelatorioVendasViewModel
+@{
+    ViewData["Title"] = "Relatório de Vendas - Sistema de Comandas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="perfil-header perfil-supervisor mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-chart-line me-3"></i>
+                Relatório de Vendas
+            </h2>
+            <p class="mb-0 fs-5">@Model.ObterTituloAgrupamento() - @Model.DataInicio.ToString("dd/MM/yyyy") a @Model.DataFim.ToString("dd/MM/yyyy")</p>
+            <div class="mt-2">
+                <a href="/relatorio" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros e Configurações -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Configurações do Relatório
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="/relatorio/vendas" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="inicio" class="form-label">Data Início</label>
+                        <input type="date" id="inicio" name="inicio" class="form-control" 
+                               value="@Model.DataInicio.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fim" class="form-label">Data Fim</label>
+                        <input type="date" id="fim" name="fim" class="form-control" 
+                               value="@Model.DataFim.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="agrupamento" class="form-label">Agrupamento</label>
+                        <select id="agrupamento" name="agrupamento" class="form-select">
+                            <option value="horario" selected="@(Model.TipoAgrupamento == "horario")">Por Hora</option>
+                            <option value="diario" selected="@(Model.TipoAgrupamento == "diario")">Por Dia</option>
+                            <option value="semanal" selected="@(Model.TipoAgrupamento == "semanal")">Por Semana</option>
+                            <option value="mensal" selected="@(Model.TipoAgrupamento == "mensal")">Por Mês</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-chart-line me-1"></i>Gerar Relatório
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo de Vendas -->
+@if (Model.ResumoVendas != null)
+{
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-success mb-2">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Total de Vendas</h5>
+                    <h3 class="text-success">@Model.ResumoVendas.TotalVendas.ToString("C2")</h3>
+                    <small class="text-muted">@Model.ResumoVendas.QuantidadeLancamentos lançamentos</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-info mb-2">
+                        <i class="fas fa-calculator fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Ticket Médio</h5>
+                    <h3 class="text-info">@Model.ResumoVendas.TicketMedio.ToString("C2")</h3>
+                    <small class="text-muted">Média por lançamento</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-warning mb-2">
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Média Diária</h5>
+                    <h3 class="text-warning">@Model.ResumoVendas.MediaVendasPorDia.ToString("C2")</h3>
+                    <small class="text-muted">@Model.ResumoVendas.DiasComVendas dias com vendas</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-danger mb-2">
+                        <i class="fas fa-ban fa-2x"></i>
+                    </div>
+                    <h5 class="card-title">Taxa Cancelamento</h5>
+                    <h3 class="text-danger">@Model.ResumoVendas.TaxaCancelamento.ToString("F1")%</h3>
+                    <small class="text-muted">@Model.ResumoVendas.QuantidadeCancelamentos cancelamentos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Gráfico de Vendas -->
+@if (Model.VendasPorPeriodo?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        @Model.ObterTituloAgrupamento()
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoVendas" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Detalhada -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Dados Detalhados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Período</th>
+                                    <th class="text-end">Total Vendas</th>
+                                    <th class="text-center">Lançamentos</th>
+                                    <th class="text-end">Ticket Médio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var venda in Model.VendasPorPeriodo.OrderByDescending(v => v.DataReferencia))
+                                {
+                                    <tr>
+                                        <td><strong>@venda.Periodo</strong></td>
+                                        <td class="text-end text-success fw-bold">@venda.TotalVendas.ToString("C2")</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">@venda.QuantidadeLancamentos</span>
+                                        </td>
+                                        <td class="text-end">@venda.TicketMedio.ToString("C2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-warning">
+                                    <th>TOTAL:</th>
+                                    <th class="text-end">@Model.VendasPorPeriodo.Sum(v => v.TotalVendas).ToString("C2")</th>
+                                    <th class="text-center">@Model.VendasPorPeriodo.Sum(v => v.QuantidadeLancamentos)</th>
+                                    <th class="text-end">@(Model.VendasPorPeriodo.Any() ? Model.VendasPorPeriodo.Average(v => v.TicketMedio).ToString("C2") : "R$ 0,00")</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Vendas por Categoria -->
+@if (Model.VendasPorCategoria?.Any() == true)
+{
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-pie-chart me-2"></i>
+                        Vendas por Categoria
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoCategorias" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Detalhes por Categoria
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var categoria in Model.VendasPorCategoria)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge @categoria.ObterClasseBadge()">@categoria.Categoria</span>
+                                <strong>@categoria.TotalVendas.ToString("C2")</strong>
+                            </div>
+                            <div class="progress mt-1" style="height: 8px;">
+                                <div class="progress-bar" style="width: @categoria.PercentualVendas.ToString("F1").Replace(",", ".")%"></div>
+                            </div>
+                            <small class="text-muted">
+                                @categoria.QuantidadeLancamentos lançamentos • 
+                                @categoria.QuantidadeItens itens • 
+                                @categoria.PercentualVendas.ToString("F1")%
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Ações de Exportação -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>
+                    Exportar Relatório
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-success w-100" onclick="exportarExcel()">
+                            <i class="fas fa-file-excel me-2"></i>
+                            Exportar para Excel
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <button type="button" class="btn btn-danger w-100" onclick="exportarPdf()">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Exportar para PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Gráfico de vendas por período
+        @if (Model.VendasPorPeriodo?.Any() == true)
+        {
+            <text>
+            const ctxVendas = document.getElementById('graficoVendas').getContext('2d');
+            const vendasChart = new Chart(ctxVendas, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.VendasPorPeriodo.Select(v => $"'{v.Periodo}'")))],
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: [@Html.Raw(string.Join(",", Model.VendasPorPeriodo.Select(v => v.TotalVendas.ToString("F2").Replace(",", "."))))],
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Gráfico de vendas por categoria
+        @if (Model.VendasPorCategoria?.Any() == true)
+        {
+            <text>
+            const ctxCategorias = document.getElementById('graficoCategorias').getContext('2d');
+            const categoriasChart = new Chart(ctxCategorias, {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.VendasPorCategoria.Select(c => $"'{c.Categoria}'")))],
+                    datasets: [{
+                        data: [@Html.Raw(string.Join(",", Model.VendasPorCategoria.Select(c => c.TotalVendas.ToString("F2").Replace(",", "."))))],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Funções de exportação
+        function exportarExcel() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarexcel';
+            
+            // Adicionar dados
+            const dados = {
+                tipoRelatorio: 'vendas',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: '@Model.TipoAgrupamento'
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            // Adicionar token CSRF
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function exportarPdf() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/relatorio/exportarpdf';
+            
+            // Adicionar dados
+            const dados = {
+                tipoRelatorio: 'vendas',
+                inicio: '@Model.DataInicio.ToString("yyyy-MM-dd")',
+                fim: '@Model.DataFim.ToString("yyyy-MM-dd")',
+                filtros: '@Model.TipoAgrupamento'
+            };
+
+            for (const [key, value] of Object.entries(dados)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            // Adicionar token CSRF
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+}
+
+@{
+    // Token para exportação
+    <input name="__RequestVerificationToken" type="hidden" value="@Html.AntiForgeryToken()" />
+}

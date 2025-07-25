@@ -35,14 +35,14 @@ builder.Services.AddDbContext<ComandasDbContext>(options =>
 });
 
 // ===================================
-// ?? SERVICES ESSENCIAIS + CONSULTA
+// ?? SERVICES ESSENCIAIS + CONSULTA + RELATÓRIOS
 // ===================================
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IProdutoService, ProdutoService>();
 builder.Services.AddScoped<IRegistroHospedeService, RegistroHospedeService>();
 builder.Services.AddScoped<ILancamentoService, LancamentoService>();
-builder.Services.AddScoped<IConsultaService, ConsultaService>(); //  NOVO SERVIÇO
-// builder.Services.AddScoped<IRelatorioService, RelatorioService>(); // TEMPORARIAMENTE COMENTADO
+builder.Services.AddScoped<IConsultaService, ConsultaService>(); // ? NOVO SERVIÇO
+builder.Services.AddScoped<IRelatorioService, RelatorioService>(); // ? RELATÓRIOS ATIVADOS
 
 // ===================================
 // ?? CONFIGURAÇÃO WEB
@@ -119,6 +119,11 @@ app.MapControllerRoute(
     name: "consulta",
     pattern: "consulta/{action=Index}/{id?}",
     defaults: new { controller = "Consulta" }); // ? NOVA ROTA
+
+app.MapControllerRoute(
+    name: "relatorio",
+    pattern: "relatorio/{action=Index}/{id?}",
+    defaults: new { controller = "Relatorio" }); // ? RELATÓRIOS
 
 app.MapControllerRoute(
     name: "registro",
